@@ -129,7 +129,7 @@ defmodule Skyscraper.Elevator.CarTest do
       assert car.moving_direction == :down
     end
 
-    test "starts to move up on closing doors when was moving udown before stop and doesn't have a lower destination, but has upper destinations" do
+    test "starts to move up on closing doors when was moving down before stop and doesn't have a lower destination, but has upper destinations" do
       car =
         %Car{
           step: :doors_closing,
