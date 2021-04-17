@@ -15,7 +15,7 @@ defmodule Skyscraper.Elevator.CarTest do
   end
 
   describe "#complete_step" do
-    test "opens the doors when they were opening" do
+    test "opens the doors when they were started to open" do
       car = %Car{step: :doors_opening} |> Car.complete_step()
       assert car.step == :doors_opened
     end
