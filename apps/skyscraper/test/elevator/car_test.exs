@@ -1,6 +1,6 @@
 defmodule Skyscraper.Elevator.CarTest do
   alias Skyscraper.Elevator.Car
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   doctest Car
 
   describe "#build" do
