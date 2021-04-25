@@ -80,27 +80,28 @@ defmodule Skyscraper.Elevator.Car do
     |> run_new_destination_callback()
   end
 
-  defp accept_destination({_step, dest, floor, floor}, car) do
+  defp accept_destination({_step, {dest, _moving_choice}, floor, floor}, car) do
     rel = if floor > dest, do: :up, else: :down
 
     car
     |> Map.put(:queue, Queue.push(car.queue, {floor, rel}))
   end
 
-  defp accept_destination({_step, dest, curr, floor}, car) when floor in curr..dest do
-    rel = if floor > dest, do: :lower, else: :upper
+  defp accept_destination({_step, {dest, moving_choice}, curr, floor}, car)
+       when floor in curr..dest do
+    rel = if floor > dest, do: :down, else: :up
 
     car
-    |> Map.put(:queue, Queue.push(car.queue, dest, rel))
-    |> Map.put(:destination, floor)
+    |> Map.put(:queue, Queue.push(car.queue, {dest, moving_choice}))
+    |> Map.put(:destination, {floor, rel})
     |> run_new_destination_callback()
   end
 
-  defp accept_destination({_step, dest, _curr, floor}, car) do
-    rel = if floor > dest, do: :upper, else: :lower
+  defp accept_destination({_step, {dest, _moving_choice}, _curr, floor}, car) do
+    rel = if floor > dest, do: :up, else: :down
 
     car
-    |> Map.put(:queue, Queue.push(car.queue, floor, rel))
+    |> Map.put(:queue, Queue.push(car.queue, {floor, rel}))
   end
 
   defp process(%Car{step: :opening_doors} = car) do
