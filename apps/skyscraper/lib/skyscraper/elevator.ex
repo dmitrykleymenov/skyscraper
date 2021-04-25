@@ -1,8 +1,7 @@
 defmodule Skyscraper.Elevator do
   use GenServer
+  require IEx
   alias Skyscraper.Elevator.Car
-
-  @step_time 1000
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
@@ -13,22 +12,30 @@ defmodule Skyscraper.Elevator do
   end
 
   def init(opts) do
-    current_floor = Keyword.get(opts, :current_floor, 1)
-    {:ok, car: %Car{current_floor: current_floor}}
+    car =
+      Car.build(
+        floor: Keyword.get(opts, :floor, 1),
+        new_destination_callback: &notify_new_destination(&1, Keyword.get(opts, :dispatcher)),
+        processing_callback: &reserve_time(&1)
+      )
+
+    {:ok, car}
   end
 
-  def handle_cast({:push_car_button, floor}, %{car: car, timer: timer}) do
-    {:noreply, %{car: Car.push_button(car, floor), timer: timer || start_timer()}}
+  def handle_cast({:push_car_button, floor}, car) do
+    {:noreply, car |> Car.push_button(floor)}
   end
 
-  def handle_info(:process, %{car: car}) do
-    case Car.process(car) do
-      {:processing, car} -> {:noreply, %{car: car, timer: start_timer()}}
-      {:idle, car} -> {:noreply, %{car: car, timer: nil}}
-    end
+  def handle_info(:step_completed, car) do
+    {:noreply, car |> Car.complete_step()}
   end
 
-  defp start_timer do
-    {:ok, timer} = :timer.send_after(@step_time, :process)
+  defp reserve_time(car) do
+    {:ok, _} = car |> Car.step_duration() |> :timer.send_after(:step_completed)
+  end
+
+  defp notify_new_destination(_car, dispatcher) do
+    # IEx.pry()
+    GenServer.cast(dispatcher, {:ready_to_new_destination, self()})
   end
 end

@@ -14,6 +14,12 @@ defmodule Skyscraper.Elevator.CarTest do
     end
   end
 
+  describe "#add_to_destinations" do
+    test "adds to upper destinations" do
+      Car.build(floor: 5) |> Car.add_to_destinations(:upper, 10)
+    end
+  end
+
   describe "#complete_step" do
     test "opens the doors when they were started to open" do
       car = %Car{step: :doors_opening} |> Car.complete_step()
@@ -27,7 +33,12 @@ defmodule Skyscraper.Elevator.CarTest do
 
     test "ups one floor and keeps moving up when destination isn't reached" do
       car =
-        %Car{current_floor: 4, step: :moving, moving_direction: :up, up_query: Prioqueue.new([6])}
+        %Car{
+          current_floor: 4,
+          step: :moving,
+          moving_direction: :up,
+          upper_destinations: Prioqueue.new([6])
+        }
         |> Car.complete_step()
 
       assert car.current_floor == 5
@@ -37,12 +48,17 @@ defmodule Skyscraper.Elevator.CarTest do
 
     test "ups one floor and starts to open doors when destination is reached by moving up" do
       car =
-        %Car{current_floor: 4, step: :moving, moving_direction: :up, up_query: Prioqueue.new([5])}
+        %Car{
+          current_floor: 4,
+          step: :moving,
+          moving_direction: :up,
+          upper_destinations: Prioqueue.new([5])
+        }
         |> Car.complete_step()
 
       assert car.current_floor == 5
       assert car.step == :doors_opening
-      assert car.up_query |> Prioqueue.to_list() == []
+      assert car.upper_destinations |> Prioqueue.to_list() == []
     end
 
     test "downs one floor and keeps moving down when destination isn't reached" do
@@ -51,7 +67,7 @@ defmodule Skyscraper.Elevator.CarTest do
           current_floor: 4,
           step: :moving,
           moving_direction: :down,
-          down_query: Prioqueue.new([2])
+          lower_destinations: Prioqueue.new([2])
         }
         |> Car.complete_step()
 
@@ -65,21 +81,21 @@ defmodule Skyscraper.Elevator.CarTest do
           current_floor: 4,
           step: :moving,
           moving_direction: :down,
-          down_query: Prioqueue.new([3])
+          lower_destinations: Prioqueue.new([3])
         }
         |> Car.complete_step()
 
       assert car.current_floor == 3
       assert car.step == :doors_opening
-      assert car.down_query |> Prioqueue.to_list() == []
+      assert car.lower_destinations |> Prioqueue.to_list() == []
     end
 
     test "becomes idle when there are no more destinations on closing doors" do
       car =
         %Car{
           step: :doors_closing,
-          down_query: Prioqueue.new(),
-          up_query: Prioqueue.new()
+          lower_destinations: Prioqueue.new(),
+          upper_destinations: Prioqueue.new()
         }
         |> Car.complete_step()
 
@@ -92,8 +108,8 @@ defmodule Skyscraper.Elevator.CarTest do
         %Car{
           step: :doors_closing,
           moving_direction: :up,
-          down_query: Prioqueue.new([3]),
-          up_query: Prioqueue.new([5])
+          lower_destinations: Prioqueue.new([3]),
+          upper_destinations: Prioqueue.new([5])
         }
         |> Car.complete_step()
 
@@ -106,8 +122,8 @@ defmodule Skyscraper.Elevator.CarTest do
         %Car{
           step: :doors_closing,
           moving_direction: :up,
-          down_query: Prioqueue.new([5]),
-          up_query: Prioqueue.new()
+          lower_destinations: Prioqueue.new([5]),
+          upper_destinations: Prioqueue.new()
         }
         |> Car.complete_step()
 
@@ -120,8 +136,8 @@ defmodule Skyscraper.Elevator.CarTest do
         %Car{
           step: :doors_closing,
           moving_direction: :down,
-          down_query: Prioqueue.new([3]),
-          up_query: Prioqueue.new([5])
+          lower_destinations: Prioqueue.new([3]),
+          upper_destinations: Prioqueue.new([5])
         }
         |> Car.complete_step()
 
@@ -134,8 +150,8 @@ defmodule Skyscraper.Elevator.CarTest do
         %Car{
           step: :doors_closing,
           moving_direction: :down,
-          down_query: Prioqueue.new(),
-          up_query: Prioqueue.new([5])
+          lower_destinations: Prioqueue.new(),
+          upper_destinations: Prioqueue.new([5])
         }
         |> Car.complete_step()
 
@@ -144,14 +160,21 @@ defmodule Skyscraper.Elevator.CarTest do
     end
   end
 
-  # describe "#build" do
-  #   test "builds a Car struct with the given floor" do
-  #     car = Car.build(floor: 5)
-  #     assert %Car{} = car
-  #     assert car.current_floor == 5
-  #     assert car.moving_direction == nil
-  #     assert car.step == nil
-  #     assert car.step_duration == nil
-  #   end
-  # end
+  describe "#push_button" do
+    setup do
+      %{car: Car.build(floor: 5)}
+    end
+
+    test "starts to open doors when is on destination floor and was idling", %{car: car} do
+      car = car |> Car.push_button(car.current_floor)
+      assert car.step == :doors_opening
+    end
+
+    test "starts to move up when is lower than destination and was idling" do
+      car = %Car{current_floor: 5, step: nil} |> Car.push_button(6)
+      assert car.step == :moving
+      assert car.moving_direction == :up
+      assert car.upper_destinations |> Prioqueue.peek_min!() == 6
+    end
+  end
 end

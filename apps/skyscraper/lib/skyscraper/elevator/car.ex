@@ -1,21 +1,35 @@
 defmodule Skyscraper.Elevator.Car do
-  alias Skyscraper.Elevator.Car
+  alias Skyscraper.Elevator.{Car, Queue}
   @step_duration 1000
-  defstruct [:down_query, :up_query, :current_floor, :moving_direction, :step, :step_duration]
+
+  defstruct [
+    :current_floor,
+    :destination,
+    :queue,
+    :step,
+    :step_duration,
+    :new_destination_callback,
+    :processing_callback
+  ]
+
+  defguardp is_open_doors(step) when step in ~w(opening_doors doors_open)a
 
   @doc """
     Builds a car struct
   """
 
-  def build(floor: floor) do
-    %Car{
-      down_query: Prioqueue.new([], cmp_fun: &Prioqueue.Helper.cmp_inverse/2),
-      up_query: Prioqueue.new(),
-      current_floor: floor,
-      moving_direction: nil,
-      step: nil,
-      step_duration: nil
+  def build(opts) do
+    car = %Car{
+      queue: Queue.build(Keyword.get(opts, :direction)),
+      current_floor: Keyword.get(opts, :floor),
+      destination: nil,
+      new_destination_callback: Keyword.get(opts, :new_destination_callback),
+      processing_callback: Keyword.get(opts, :processing_callback)
     }
+
+    Keyword.get(opts, :destinations, [])
+    |> Enum.reduce(car, &accept_destination(&2, &1))
+    |> set_step(Keyword.get(opts, :step, :idling))
   end
 
   @doc """
@@ -23,117 +37,148 @@ defmodule Skyscraper.Elevator.Car do
   """
 
   def complete_step(%Car{} = car) do
-    car
-    |> process
-    |> update_step_duration()
+    car |> process()
   end
 
   @doc """
-    Checks if car is ready to handle new destination requests
+    Add a new destination floor by using inside-cabin interface
   """
 
-  def ready_to_new_destination?(%Car{step: step}), do: step == :doors_closing
+  def push_button(%Car{} = car, floor) do
+    accept_destination({car.step, car.destination, car.current_floor, floor}, car)
+  end
 
   @doc """
-    Add new destination point by using inside-cabin interface
+    Returns current step duration
   """
 
-  def push_button(%Car{step: nil, current_floor: current_floor} = car, current_floor) do
+  def step_duration(%Car{step_duration: step_duration}), do: step_duration
+
+  defp accept_destination({:idling, _dest, curr, curr}, car) do
     car
-    |> Map.put(:step, :doors_opening)
-    |> update_step_duration()
+    |> set_step(:opening_doors)
+    |> run_new_destination_callback()
   end
 
-  def push_button(%Car{step: nil, current_floor: current_floor} = car, floor) do
-    if floor > current_floor do
-      %{
-        car
-        | moving_direction: :up,
-          step: :moving,
-          up_query: Prioqueue.insert(car.up_query, floor)
-      }
-    else
-      %{
-        car
-        | moving_direction: :down,
-          step: :moving,
-          down_query: Prioqueue.insert(car.down_query, floor)
-      }
-    end
-    |> update_step_duration()
+  defp accept_destination({:idling, _dest, curr, floor}, car) do
+    direction = if floor > curr, do: :up, else: :down
+
+    car
+    |> Map.put(:destination, {floor, direction})
+    |> set_moving_direction(direction)
+    |> set_step(:moving)
+    |> run_new_destination_callback()
   end
 
-  def push_button(%Car{step: step, current_floor: current_floor} = car, current_floor)
-      when step in ~w(doors_opening doors_opened)a,
-      do: car
+  defp accept_destination({_step, {dest, _moving_choice}, _curr, dest}, car), do: car
 
-  def push_button(%Car{current_floor: current_floor, moving_direction: :up} = car, floor) do
-    if floor > current_floor do
-      Map.put(car, :up_query, Prioqueue.insert(car.up_query, floor))
-    else
-      Map.put(car, :down_query, Prioqueue.insert(car.down_query, floor))
-    end
+  defp accept_destination({step, _dest, curr, curr}, car) when is_open_doors(step), do: car
+
+  defp accept_destination({_step, nil, _curr, floor}, car) do
+    car
+    |> Map.put(:destination, floor)
+    |> run_new_destination_callback()
   end
 
-  def push_button(%Car{current_floor: current_floor, moving_direction: :down} = car, floor) do
-    if floor < current_floor do
-      Map.put(car, :down_query, Prioqueue.insert(car.down_query, floor))
-    else
-      Map.put(car, :up_query, Prioqueue.insert(car.up_query, floor))
-    end
+  defp accept_destination({_step, dest, floor, floor}, car) do
+    rel = if floor > dest, do: :up, else: :down
+
+    car
+    |> Map.put(:queue, Queue.push(car.queue, {floor, rel}))
   end
 
-  defp process(%Car{step: :doors_opening} = car), do: Map.put(car, :step, :doors_opened)
-  defp process(%Car{step: :doors_opened} = car), do: Map.put(car, :step, :doors_closing)
-  defp process(%Car{step: :doors_closing} = car), do: close_doors(car)
-  defp process(%Car{step: :moving} = car), do: move(car)
-  defp process(%Car{step: nil}), do: raise("Can't complete idle step")
+  defp accept_destination({_step, dest, curr, floor}, car) when floor in curr..dest do
+    rel = if floor > dest, do: :lower, else: :upper
 
-  defp move(%Car{moving_direction: :up} = car) do
-    current_floor = car.current_floor + 1
-
-    case Prioqueue.extract_min!(car.up_query) do
-      {^current_floor, up_query} ->
-        %{car | current_floor: current_floor, up_query: up_query, step: :doors_opening}
-
-      _ ->
-        %{car | current_floor: current_floor}
-    end
+    car
+    |> Map.put(:queue, Queue.push(car.queue, dest, rel))
+    |> Map.put(:destination, floor)
+    |> run_new_destination_callback()
   end
 
-  defp move(%Car{moving_direction: :down} = car) do
-    current_floor = car.current_floor - 1
+  defp accept_destination({_step, dest, _curr, floor}, car) do
+    rel = if floor > dest, do: :upper, else: :lower
 
-    case Prioqueue.extract_min!(car.down_query) do
-      {^current_floor, down_query} ->
-        %{car | current_floor: current_floor, down_query: down_query, step: :doors_opening}
+    car
+    |> Map.put(:queue, Queue.push(car.queue, floor, rel))
+  end
 
-      _ ->
-        %{car | current_floor: current_floor}
-    end
+  defp process(%Car{step: :opening_doors} = car) do
+    car |> set_step(:doors_open)
+  end
+
+  defp process(%Car{step: :doors_open} = car) do
+    car |> set_step(:closing_doors)
+  end
+
+  defp process(%Car{step: :closing_doors} = car), do: car |> close_doors()
+  defp process(%Car{step: :moving} = car), do: car |> move()
+  defp process(%Car{step: :idling}), do: raise("Can't process idle step")
+
+  defp move(car) do
+    car
+    |> change_floor()
+    |> check_destination()
+  end
+
+  defp change_floor(%{destination: dest, current_floor: floor} = car) when floor < dest do
+    car |> Map.put(:current_floor, floor + 1)
+  end
+
+  defp change_floor(%{destination: dest, current_floor: floor} = car) when floor > dest do
+    car |> Map.put(:current_floor, floor - 1)
   end
 
   defp close_doors(car) do
-    case({peek(car.up_query), peek(car.down_query), car.moving_direction}) do
-      {nil, nil, _} -> %{car | moving_direction: nil, step: nil}
-      {nil, _, :up} -> %{car | moving_direction: :down, step: :moving}
-      {_, nil, :down} -> %{car | moving_direction: :up, step: :moving}
-      _ -> %{car | step: :moving}
-    end
+    car
+    |> check_destination()
+    |> run_new_destination_callback()
   end
 
-  defp peek(queue) do
-    case Prioqueue.peek_min(queue) do
-      {:error, :empty} -> nil
-      {:ok, value} -> value
-    end
+  defp check_destination(%Car{destination: floor, current_floor: floor} = car) do
+    car |> start_to_open_doors()
   end
 
-  defp update_step_duration(car) do
-    Map.put(car, :step_duration, step_duration(car.step))
+  defp check_destination(%Car{destination: nil} = car) do
+    car |> set_step(:idling)
   end
 
-  defp step_duration(_step) do
+  defp check_destination(car) do
+    car |> set_step(:moving)
+  end
+
+  defp start_to_open_doors(%Car{queue: queue} = car) do
+    {dest, queue} = queue |> Queue.pop()
+
+    car
+    |> Map.merge(%{destination: dest, queue: queue})
+    |> set_step(:opening_doors)
+  end
+
+  defp set_step(car, :idling), do: car |> Map.put(:step, :idling)
+  defp set_step(%{step: step} = car, step), do: car |> run_processing_callback()
+
+  defp set_step(car, step) do
+    car
+    |> Map.merge(%{step: step, step_duration: duration(step)})
+    |> run_processing_callback()
+  end
+
+  defp duration(_step) do
     @step_duration
+  end
+
+  defp set_moving_direction(car, direction) do
+    car |> Map.put(:queue, Queue.set_moving_direction(car.queue, direction))
+  end
+
+  defp run_processing_callback(car) do
+    car.processing_callback.(car)
+    car
+  end
+
+  defp run_new_destination_callback(car) do
+    car.new_destination_callback.(car)
+    car
   end
 end
