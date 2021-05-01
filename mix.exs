@@ -26,7 +26,8 @@ defmodule Skyscraper.Umbrella.MixProject do
   defp deps do
     [
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
-      {:inch_ex, github: "rrrene/inch_ex", only: [:dev, :test]}
+      {:inch_ex, github: "rrrene/inch_ex", only: [:dev, :test]},
+      {:benchee, "~> 1.0", only: :dev}
     ]
   end
 
