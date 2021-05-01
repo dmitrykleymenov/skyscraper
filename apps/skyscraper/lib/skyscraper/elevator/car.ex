@@ -4,12 +4,12 @@ defmodule Skyscraper.Elevator.Car do
 
   defstruct [
     :current_floor,
+    :acceptable_floors,
     :destination,
     :queue,
     :step,
     :step_duration,
-    :new_destination_callback,
-    :processing_callback
+    :instructions
   ]
 
   defguardp is_open_doors(step) when step in ~w(opening_doors doors_open)a
@@ -19,12 +19,14 @@ defmodule Skyscraper.Elevator.Car do
   """
 
   def build(opts) do
+    floors = Keyword.fetch!(opts, :floors)
+
     car = %Car{
       queue: Queue.build(Keyword.get(opts, :direction)),
-      current_floor: Keyword.get(opts, :floor),
+      acceptable_floors: floors,
+      current_floor: Keyword.get(opts, :current_floor, Enum.min(floors)),
       destination: nil,
-      new_destination_callback: Keyword.get(opts, :new_destination_callback),
-      processing_callback: Keyword.get(opts, :processing_callback)
+      instructions: []
     }
 
     Keyword.get(opts, :destinations, [])
@@ -37,7 +39,9 @@ defmodule Skyscraper.Elevator.Car do
   """
 
   def complete_step(%Car{} = car) do
-    car |> process()
+    car
+    |> process()
+    |> extract_instructions()
   end
 
   @doc """
@@ -45,7 +49,9 @@ defmodule Skyscraper.Elevator.Car do
   """
 
   def push_button(%Car{} = car, floor) do
-    accept_destination({car.step, car.destination, car.current_floor, floor}, car)
+    {car.step, car.destination, car.current_floor, floor}
+    |> accept_destination(car)
+    |> extract_instructions()
   end
 
   @doc """
@@ -54,10 +60,34 @@ defmodule Skyscraper.Elevator.Car do
 
   def step_duration(%Car{step_duration: step_duration}), do: step_duration
 
+  @doc """
+    Returns acceptable floors for that car
+  """
+  def acceptable_floors(%Car{acceptable_floors: acceptable_floors}), do: acceptable_floors
+
+  @doc """
+    returns floors which elevator must visit
+  """
+  def floors_to_handle(%Car{destination: nil}), do: []
+
+  def floors_to_handle(%Car{destination: destination, queue: queue}) do
+    [destination | Queue.list(queue)] |> Enum.map(&elem(&1, 0))
+  end
+
+  @doc """
+    returns the current step
+  """
+  def step(%Car{step: step}), do: step
+
+  @doc """
+    returns the current floor
+  """
+  def current_floor(%Car{current_floor: current_floor}), do: current_floor
+
   defp accept_destination({:idling, _dest, curr, curr}, car) do
     car
     |> set_step(:opening_doors)
-    |> run_new_destination_callback()
+    |> add_instruction(:notify_new_destination)
   end
 
   defp accept_destination({:idling, _dest, curr, floor}, car) do
@@ -67,17 +97,19 @@ defmodule Skyscraper.Elevator.Car do
     |> Map.put(:destination, {floor, direction})
     |> set_moving_direction(direction)
     |> set_step(:moving)
-    |> run_new_destination_callback()
+    |> add_instruction(:notify_new_destination)
   end
 
   defp accept_destination({_step, {dest, _moving_choice}, _curr, dest}, car), do: car
 
   defp accept_destination({step, _dest, curr, curr}, car) when is_open_doors(step), do: car
 
-  defp accept_destination({_step, nil, _curr, floor}, car) do
+  defp accept_destination({_step, nil, curr, floor}, car) do
+    direction = if floor > curr, do: :up, else: :down
+
     car
-    |> Map.put(:destination, floor)
-    |> run_new_destination_callback()
+    |> Map.put(:destination, {floor, direction})
+    |> add_instruction(:notify_new_destination)
   end
 
   defp accept_destination({_step, {dest, _moving_choice}, floor, floor}, car) do
@@ -94,7 +126,7 @@ defmodule Skyscraper.Elevator.Car do
     car
     |> Map.put(:queue, Queue.push(car.queue, {dest, moving_choice}))
     |> Map.put(:destination, {floor, rel})
-    |> run_new_destination_callback()
+    |> add_instruction(:notify_new_destination)
   end
 
   defp accept_destination({_step, {dest, _moving_choice}, _curr, floor}, car) do
@@ -122,21 +154,23 @@ defmodule Skyscraper.Elevator.Car do
     |> check_destination()
   end
 
-  defp change_floor(%{destination: dest, current_floor: floor} = car) when floor < dest do
+  defp change_floor(%{destination: {dest, _moving_choice}, current_floor: floor} = car)
+       when floor < dest do
     car |> Map.put(:current_floor, floor + 1)
   end
 
-  defp change_floor(%{destination: dest, current_floor: floor} = car) when floor > dest do
+  defp change_floor(%{destination: {dest, _moving_choice}, current_floor: floor} = car)
+       when floor > dest do
     car |> Map.put(:current_floor, floor - 1)
   end
 
   defp close_doors(car) do
     car
     |> check_destination()
-    |> run_new_destination_callback()
+    |> add_instruction(:notify_new_destination)
   end
 
-  defp check_destination(%Car{destination: floor, current_floor: floor} = car) do
+  defp check_destination(%Car{destination: {floor, _moving_choice}, current_floor: floor} = car) do
     car |> start_to_open_doors()
   end
 
@@ -157,12 +191,12 @@ defmodule Skyscraper.Elevator.Car do
   end
 
   defp set_step(car, :idling), do: car |> Map.put(:step, :idling)
-  defp set_step(%{step: step} = car, step), do: car |> run_processing_callback()
+  defp set_step(%{step: step} = car, step), do: car |> add_instruction(:reserve_step_time)
 
   defp set_step(car, step) do
     car
     |> Map.merge(%{step: step, step_duration: duration(step)})
-    |> run_processing_callback()
+    |> add_instruction(:reserve_step_time)
   end
 
   defp duration(_step) do
@@ -173,13 +207,11 @@ defmodule Skyscraper.Elevator.Car do
     car |> Map.put(:queue, Queue.set_moving_direction(car.queue, direction))
   end
 
-  defp run_processing_callback(car) do
-    car.processing_callback.(car)
-    car
+  defp extract_instructions(%Car{instructions: instructions} = car) do
+    {instructions |> Enum.reverse(), %{car | instructions: []}}
   end
 
-  defp run_new_destination_callback(car) do
-    car.new_destination_callback.(car)
-    car
+  defp add_instruction(car, instruction) do
+    car |> Map.put(:instructions, [instruction | car.instructions])
   end
 end

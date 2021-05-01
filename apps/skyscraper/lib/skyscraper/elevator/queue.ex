@@ -55,6 +55,13 @@ defmodule Skyscraper.Elevator.Queue do
     end
   end
 
+  @doc """
+    returns all requests in queue
+  """
+  def list(%Queue{down_queue: down_queue, up_queue: up_queue}) do
+    Prioqueue.to_list(down_queue) ++ Prioqueue.to_list(up_queue)
+  end
+
   defp extract(prioqueue) do
     case prioqueue |> Prioqueue.extract_min() do
       {:error, :empty} -> {nil, prioqueue}
