@@ -7,8 +7,11 @@ defmodule Skyscraper.ConsoleDisplay do
     elevator
     |> elevator_status()
     |> IO.puts()
+  end
 
-    # apply(callback_mod, :elevator_state_changed, Elevator.build(dispatcher, id, car))
+  @impl Display
+  def dispatcher_state_changed({}) do
+    :ok
   end
 
   defp elevator_status(elevator) do
