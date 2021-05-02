@@ -49,7 +49,8 @@ defmodule Skyscraper.Elevator.Car do
   """
 
   def push_button(%Car{} = car, floor) do
-    {car.step, car.destination, car.current_floor, floor}
+    {car.step, car.destination, car.current_floor,
+     {floor, determine_moving_choice(floor, car) |> IO.inspect()}}
     |> accept_destination(car)
     |> extract_instructions()
   end
@@ -66,7 +67,7 @@ defmodule Skyscraper.Elevator.Car do
   def acceptable_floors(%Car{acceptable_floors: acceptable_floors}), do: acceptable_floors
 
   @doc """
-    returns floors which elevator must visit
+    Returns floors which elevator must visit
   """
   def floors_to_handle(%Car{destination: nil}), do: []
 
@@ -84,56 +85,56 @@ defmodule Skyscraper.Elevator.Car do
   """
   def current_floor(%Car{current_floor: current_floor}), do: current_floor
 
-  defp accept_destination({:idling, _dest, curr, curr}, car) do
+  defp determine_moving_choice(floor, %Car{current_floor: curr}) when floor > curr, do: :up
+  defp determine_moving_choice(floor, %Car{current_floor: cur}) when floor < cur, do: :down
+  defp determine_moving_choice(_floor, %Car{destination: nil}), do: :down
+  defp determine_moving_choice(_floor, %Car{step: :moving_up}), do: :down
+  defp determine_moving_choice(_floor, %Car{step: :moving_down}), do: :up
+
+  defp determine_moving_choice(floor, %Car{destination: {dest, _moving_choice}}) do
+    if floor < dest, do: :up, else: :down
+  end
+
+  defp accept_destination({:idling, _dest, curr, {curr, _moving_choice}}, car) do
     car
     |> set_step(:opening_doors)
     |> add_instruction(:notify_new_destination)
   end
 
-  defp accept_destination({:idling, _dest, curr, floor}, car) do
-    direction = if floor > curr, do: :up, else: :down
-
+  defp accept_destination({:idling, _dest, _curr, {floor, moving_choice}}, car) do
     car
-    |> Map.put(:destination, {floor, direction})
-    |> set_moving_direction(direction)
-    |> set_step(String.to_atom("moving_#{direction}"))
+    |> Map.put(:destination, {floor, moving_choice})
+    |> set_moving_direction(moving_choice)
+    |> set_step(String.to_atom("moving_#{moving_choice}"))
     |> add_instruction(:notify_new_destination)
   end
 
-  defp accept_destination({_step, {dest, _moving_choice}, _curr, dest}, car), do: car
+  defp accept_destination({_step, {dest, _choice1}, _curr, {dest, _choice2}}, car), do: car
+  defp accept_destination({step, _dest, curr, {curr, _}}, car) when is_open_doors(step), do: car
 
-  defp accept_destination({step, _dest, curr, curr}, car) when is_open_doors(step), do: car
-
-  defp accept_destination({_step, nil, curr, floor}, car) do
-    direction = if floor > curr, do: :up, else: :down
-
+  defp accept_destination({_step, nil, _curr, floor}, car) do
     car
-    |> Map.put(:destination, {floor, direction})
+    |> Map.put(:destination, floor)
     |> add_instruction(:notify_new_destination)
   end
 
-  defp accept_destination({_step, {dest, _moving_choice}, floor, floor}, car) do
-    rel = if floor > dest, do: :up, else: :down
-
-    car
-    |> Map.put(:queue, Queue.push(car.queue, {floor, rel}))
+  defp accept_destination({_step, _dest, curr, {curr, choice}}, car) do
+    car |> Map.put(:queue, Queue.push(car.queue, {curr, choice}))
   end
 
-  defp accept_destination({_step, {dest, moving_choice}, curr, floor}, car)
+  defp accept_destination(
+         {_step, {dest, dest_moving_choice}, curr, {floor, floor_moving_choice}},
+         car
+       )
        when floor in curr..dest do
-    rel = if floor > dest, do: :down, else: :up
-
     car
-    |> Map.put(:queue, Queue.push(car.queue, {dest, moving_choice}))
-    |> Map.put(:destination, {floor, rel})
+    |> Map.put(:queue, Queue.push(car.queue, {dest, dest_moving_choice}))
+    |> Map.put(:destination, {floor, floor_moving_choice})
     |> add_instruction(:notify_new_destination)
   end
 
-  defp accept_destination({_step, {dest, _moving_choice}, _curr, floor}, car) do
-    rel = if floor > dest, do: :up, else: :down
-
-    car
-    |> Map.put(:queue, Queue.push(car.queue, {floor, rel}))
+  defp accept_destination({_step, _dest, _curr, floor}, car) do
+    car |> Map.put(:queue, Queue.push(car.queue, floor))
   end
 
   defp process(%Car{step: :opening_doors} = car) do
