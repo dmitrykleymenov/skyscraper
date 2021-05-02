@@ -71,7 +71,7 @@ defmodule Skyscraper.Elevator.Car do
   def floors_to_handle(%Car{destination: nil}), do: []
 
   def floors_to_handle(%Car{destination: destination, queue: queue}) do
-    [destination | Queue.list(queue)] |> Enum.map(&elem(&1, 0))
+    [elem(destination, 0) | Queue.list(queue)]
   end
 
   @doc """
@@ -96,7 +96,7 @@ defmodule Skyscraper.Elevator.Car do
     car
     |> Map.put(:destination, {floor, direction})
     |> set_moving_direction(direction)
-    |> set_step(:moving)
+    |> set_step(String.to_atom("moving_#{direction}"))
     |> add_instruction(:notify_new_destination)
   end
 
@@ -145,23 +145,21 @@ defmodule Skyscraper.Elevator.Car do
   end
 
   defp process(%Car{step: :closing_doors} = car), do: car |> close_doors()
-  defp process(%Car{step: :moving} = car), do: car |> move()
+  defp process(%Car{step: :moving_up} = car), do: car |> ascend()
+  defp process(%Car{step: :moving_down} = car), do: car |> descend()
+
   defp process(%Car{step: :idling}), do: raise("Can't process idle step")
 
-  defp move(car) do
+  defp ascend(%{current_floor: floor} = car) do
     car
-    |> change_floor()
+    |> Map.put(:current_floor, floor + 1)
     |> check_destination()
   end
 
-  defp change_floor(%{destination: {dest, _moving_choice}, current_floor: floor} = car)
-       when floor < dest do
-    car |> Map.put(:current_floor, floor + 1)
-  end
-
-  defp change_floor(%{destination: {dest, _moving_choice}, current_floor: floor} = car)
-       when floor > dest do
-    car |> Map.put(:current_floor, floor - 1)
+  defp descend(%{current_floor: floor} = car) do
+    car
+    |> Map.put(:current_floor, floor - 1)
+    |> check_destination()
   end
 
   defp close_doors(car) do
@@ -171,7 +169,11 @@ defmodule Skyscraper.Elevator.Car do
   end
 
   defp check_destination(%Car{destination: {floor, _moving_choice}, current_floor: floor} = car) do
-    car |> start_to_open_doors()
+    {dest, queue} = car.queue |> Queue.pop()
+
+    car
+    |> Map.merge(%{destination: dest, queue: queue})
+    |> set_step(:opening_doors)
   end
 
   defp check_destination(%Car{destination: nil} = car) do
@@ -179,19 +181,20 @@ defmodule Skyscraper.Elevator.Car do
   end
 
   defp check_destination(car) do
-    car |> set_step(:moving)
+    car |> actualize_moving_step()
   end
 
-  defp start_to_open_doors(%Car{queue: queue} = car) do
-    {dest, queue} = queue |> Queue.pop()
-
-    car
-    |> Map.merge(%{destination: dest, queue: queue})
-    |> set_step(:opening_doors)
+  defp actualize_moving_step(
+         %Car{destination: {dest, _moving_choice}, current_floor: floor} = car
+       ) do
+    cond do
+      car.step != :moving_up && dest > floor -> car |> set_step(:moving_up)
+      car.step != :moving_down && dest < floor -> car |> set_step(:moving_down)
+      true -> car |> add_instruction(:reserve_step_time)
+    end
   end
 
   defp set_step(car, :idling), do: car |> Map.put(:step, :idling)
-  defp set_step(%{step: step} = car, step), do: car |> add_instruction(:reserve_step_time)
 
   defp set_step(car, step) do
     car
