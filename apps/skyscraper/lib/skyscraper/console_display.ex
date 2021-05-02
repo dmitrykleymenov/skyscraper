@@ -5,7 +5,7 @@ defmodule Skyscraper.ConsoleDisplay do
   @impl Display
   def elevator_state_changed(elevator) do
     elevator
-    |> elevator_status()
+    |> format_elevator_status()
     |> IO.puts()
   end
 
@@ -14,9 +14,16 @@ defmodule Skyscraper.ConsoleDisplay do
     :ok
   end
 
-  defp elevator_status(elevator) do
+  defp format_elevator_status(elevator) do
     "Elevator ##{elevator.elevator_id} from #{elevator.building} currently on the #{
       elevator.current_floor
-    } floor and #{elevator.status}"
+    } floor and #{elevator.status}. #{elevator.floor_buttons |> show_buttons()}"
   end
+
+  defp show_buttons(buttons), do: buttons |> filter_active() |> display_floors()
+
+  defp filter_active(buttons), do: for({floor, active} <- buttons, active, do: floor)
+
+  defp display_floors([]), do: "No active buttons"
+  defp display_floors(floors), do: "Active buttons: #{floors |> Enum.join(", ")}"
 end
