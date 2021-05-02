@@ -49,8 +49,7 @@ defmodule Skyscraper.Elevator.Car do
   """
 
   def push_button(%Car{} = car, floor) do
-    {car.step, car.destination, car.current_floor,
-     {floor, determine_moving_choice(floor, car) |> IO.inspect()}}
+    {car.step, car.destination, car.current_floor, {floor, determine_moving_choice(floor, car)}}
     |> accept_destination(car)
     |> extract_instructions()
   end
