@@ -1,14 +1,13 @@
 defmodule Skyscraper.Elevator.Queue do
   alias Skyscraper.Elevator.Queue
-  defstruct [:down_queue, :up_queue, :moving_direction]
+  defstruct [:down_queue, :up_queue]
 
   @doc """
     builds a queue struct with defaults
   """
 
-  def build(direction \\ :up) do
+  def build() do
     %Queue{
-      moving_direction: direction,
       down_queue: Prioqueue.empty(cmp_fun: &Prioqueue.Helper.cmp_inverse/2),
       up_queue: Prioqueue.empty()
     }
@@ -29,26 +28,31 @@ defmodule Skyscraper.Elevator.Queue do
   end
 
   @doc """
-    Sets new moving direction
-  """
-  def set_moving_direction(%Queue{} = queue, moving_direction) do
-    queue
-    |> Map.put(:moving_direction, moving_direction)
-  end
-
-  @doc """
     Returns next destination and the rest queue
   """
-  def pop(queue) do
-    queues = direction_queues(queue)
 
-    case {Prioqueue.empty?(queues.forward.queue), Prioqueue.empty?(queues.backward.queue)} do
+  def pop(queue, :up) do
+    case {Prioqueue.empty?(queue.up_queue), Prioqueue.empty?(queue.down_queue)} do
       {false, _} ->
-        {value, prioqueue} = extract(queues.forward.queue)
-        {{value, queues.forward.direction}, queue |> Map.put(queues.forward.name, prioqueue)}
+        {:ok, {value, prioqueue}} = Prioqueue.extract_min(queue.up_queue)
+        {{value, :up}, queue |> Map.put(:up, prioqueue)}
 
       {true, false} ->
-        queue |> reverse_moving_direction() |> pop()
+        queue |> pop(:down)
+
+      {true, true} ->
+        {nil, queue}
+    end
+  end
+
+  def pop(queue, :down) do
+    case {Prioqueue.empty?(queue.down_queue), Prioqueue.empty?(queue.up_queue)} do
+      {false, _} ->
+        {:ok, {value, prioqueue}} = Prioqueue.extract_min(queue.up_queue)
+        {{value, :down}, queue |> Map.put(:down, prioqueue)}
+
+      {true, false} ->
+        queue |> pop(:up)
 
       {true, true} ->
         {nil, queue}
@@ -60,34 +64,5 @@ defmodule Skyscraper.Elevator.Queue do
   """
   def list(%Queue{down_queue: down_queue, up_queue: up_queue}) do
     Prioqueue.to_list(down_queue) ++ Prioqueue.to_list(up_queue)
-  end
-
-  defp extract(prioqueue) do
-    case prioqueue |> Prioqueue.extract_min() do
-      {:error, :empty} -> {nil, prioqueue}
-      {:ok, result} -> result
-    end
-  end
-
-  defp reverse_moving_direction(%Queue{moving_direction: :down} = queue) do
-    queue |> set_moving_direction(:up)
-  end
-
-  defp reverse_moving_direction(%Queue{moving_direction: :up} = queue) do
-    queue |> set_moving_direction(:down)
-  end
-
-  defp direction_queues(%Queue{moving_direction: :up} = queue) do
-    %{
-      forward: %{queue: queue.up_queue, name: :up_queue, direction: :up},
-      backward: %{queue: queue.down_queue, name: :down_queue, direction: :down}
-    }
-  end
-
-  defp direction_queues(%Queue{moving_direction: :down} = queue) do
-    %{
-      forward: %{queue: queue.down_queue, name: :down_queue, direction: :down},
-      backward: %{queue: queue.up_queue, name: :up_queue, direction: :up}
-    }
   end
 end
