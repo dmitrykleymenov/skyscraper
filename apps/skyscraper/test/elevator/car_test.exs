@@ -6,9 +6,9 @@ defmodule Skyscraper.Elevator.CarTest do
   test "builds a Car struct with the given params" do
     car = Car.build(current_floor: 5, floors: [4, 5, 6])
     assert %Car{} = car
-    assert car.current_floor == 5
+    assert car |> Car.current_floor() == 5
     assert car.acceptable_floors == [4, 5, 6]
-    assert car.step == :idling
+    assert car |> Car.step() == :idling
     assert %Queue{} = car.queue
   end
 
@@ -35,7 +35,7 @@ defmodule Skyscraper.Elevator.CarTest do
   end
 
   test "returns current step" do
-    assert Car.builld() |> Car.step() == :idling
+    assert Car.build() |> Car.step() == :idling
     assert build_car(step: :moving_up) |> Car.step() == :moving_up
   end
 
@@ -44,7 +44,7 @@ defmodule Skyscraper.Elevator.CarTest do
   end
 
   describe "#push_button" do
-    test "when idling and is on the destination floor opens the doors and gives start instuctions" do
+    test "opens the doors when idling and is on the destination floor" do
       car = build_car(current_floor: 6)
       assert car |> Car.step() == :idling
       assert car |> Car.current_floor() == 6
@@ -57,7 +57,7 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions == [:reserve_step_time]
     end
 
-    test "when idling and isn't on the destination floor starts moving and gives start instructions" do
+    test "starts moving and gives start instructions when idling and isn't on the destination floor" do
       car = build_car()
       assert car |> Car.step() == :idling
       assert car |> Car.current_floor() == 1
@@ -69,7 +69,7 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions == [:reserve_step_time]
     end
 
-    test "when new floor request is destination floor and car isn't idling ignores the command" do
+    test "ignores the command when new floor request is destination floor and car isn't idling" do
       car = build_car(destination: {6, :up}, step: :moving_up)
       {instructions, new_car} = car |> Car.push_button(6)
 
@@ -77,7 +77,7 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions |> Enum.empty?()
     end
 
-    test "when new floor request is current floor and car is opening doors ignores the command" do
+    test "ignores the command when new floor request is current floor and car is opening doors" do
       car = build_car(current_floor: 6, step: :opening_doors)
       {instructions, new_car} = car |> Car.push_button(6)
 
@@ -85,7 +85,7 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions |> Enum.empty?()
     end
 
-    test "when destination is nil puts new destination" do
+    test "puts new destination when destination is nil" do
       car = build_car(current_floor: 5, step: :closing_doors)
       assert Car.floors_to_handle(car) == []
       {instructions, car} = car |> Car.push_button(6)
@@ -95,7 +95,7 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions |> Enum.empty?()
     end
 
-    test "when moving and request is the current floor puts request to queue" do
+    test "puts request to queue when moving and request is the current floor" do
       car = build_car(step: :moving_up, destination: {5, :up})
       assert car |> Car.current_floor() == 1
       assert car |> Car.floors_to_handle() == [5]
@@ -106,7 +106,7 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions |> Enum.empty?()
     end
 
-    test "when request is between current floor and destination, changes the destination and puts the old one to queue" do
+    test "changes the destination and puts the old one to queue when request is between current floor and destination" do
       car = build_car(step: :moving_up, destination: {5, :up})
       assert car |> Car.current_floor() == 1
       assert car |> Car.floors_to_handle() == [5]
@@ -117,7 +117,7 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions == [:notify_new_destination]
     end
 
-    test "when request isn't between current floor and destination, puts it to queue" do
+    test "puts it to queue when request isn't between current floor and destination" do
       car = build_car(step: :moving_up, destination: {5, :up})
       assert car |> Car.current_floor() == 1
       assert car |> Car.floors_to_handle() == [5]
@@ -129,165 +129,132 @@ defmodule Skyscraper.Elevator.CarTest do
     end
   end
 
-  # @tag :skip
-  # describe "#process" do
-  #   test "opens the doors when they were started to open" do
-  #     car = %Car{step: :doors_opening} |> Car.complete_step()
-  #     assert car.step == :doors_opened
-  #   end
+  describe "#complete_step" do
+    test "opens the doors when they were started to open" do
+      {instructions, car} = build_car(step: :opening_doors) |> Car.complete_step()
 
-  #   test "starts to close the doors when they were opened" do
-  #     car = %Car{step: :doors_opened} |> Car.complete_step()
-  #     assert car.step == :doors_closing
-  #   end
+      assert car |> Car.step() == :doors_open
+      assert instructions == [:reserve_step_time]
+    end
 
-  #   test "ups one floor and keeps moving up when destination isn't reached" do
-  #     car =
-  #       %Car{
-  #         current_floor: 4,
-  #         step: :moving,
-  #         moving_direction: :up,
-  #         upper_destinations: Prioqueue.new([6])
-  #       }
-  #       |> Car.complete_step()
+    test "starts to close the doors when they were opened" do
+      {instructions, car} = build_car(step: :doors_open) |> Car.complete_step()
 
-  #     assert car.current_floor == 5
-  #     assert car.step == :moving
-  #     assert car.moving_direction == :up
-  #   end
+      assert car |> Car.step() == :closing_doors
+      assert instructions == [:reserve_step_time]
+    end
 
-  #   test "ups one floor and starts to open doors when destination is reached by moving up" do
-  #     car =
-  #       %Car{
-  #         current_floor: 4,
-  #         step: :moving,
-  #         moving_direction: :up,
-  #         upper_destinations: Prioqueue.new([5])
-  #       }
-  #       |> Car.complete_step()
+    test "ascends one floor and keeps moving up when destination isn't reached" do
+      {instructions, car} =
+        [step: :moving_up, destination: {6, :up}]
+        |> build_car()
+        |> Car.complete_step()
 
-  #     assert car.current_floor == 5
-  #     assert car.step == :doors_opening
-  #     assert car.upper_destinations |> Prioqueue.to_list() == []
-  #   end
+      assert car |> Car.current_floor() == 2
+      assert car |> Car.step() == :moving_up
+      assert instructions == [:reserve_step_time]
+    end
 
-  #   test "downs one floor and keeps moving down when destination isn't reached" do
-  #     car =
-  #       %Car{
-  #         current_floor: 4,
-  #         step: :moving,
-  #         moving_direction: :down,
-  #         lower_destinations: Prioqueue.new([2])
-  #       }
-  #       |> Car.complete_step()
+    test "ascends one floor and starts to open doors when destination is reached" do
+      car = [step: :moving_up, destination: {2, :up}] |> build_car()
+      assert car |> Car.floors_to_handle() == [2]
 
-  #     assert car.current_floor == 3
-  #     assert car.step == :moving
-  #   end
+      {instructions, car} = car |> Car.complete_step()
 
-  #   test "downs one floor and starts to open doors when destination is reached by moving down" do
-  #     car =
-  #       %Car{
-  #         current_floor: 4,
-  #         step: :moving,
-  #         moving_direction: :down,
-  #         lower_destinations: Prioqueue.new([3])
-  #       }
-  #       |> Car.complete_step()
+      assert car |> Car.current_floor() == 2
+      assert car |> Car.step() == :opening_doors
+      assert car |> Car.floors_to_handle() == []
+      assert instructions == [:reserve_step_time]
+    end
 
-  #     assert car.current_floor == 3
-  #     assert car.step == :doors_opening
-  #     assert car.lower_destinations |> Prioqueue.to_list() == []
-  #   end
+    test "descends one floor and keeps moving down when destination isn't reached" do
+      {instructions, car} =
+        [step: :moving_down, destination: {6, :down}, current_floor: 8]
+        |> build_car()
+        |> Car.complete_step()
 
-  #   test "becomes idle when there are no more destinations on closing doors" do
-  #     car =
-  #       %Car{
-  #         step: :doors_closing,
-  #         lower_destinations: Prioqueue.new(),
-  #         upper_destinations: Prioqueue.new()
-  #       }
-  #       |> Car.complete_step()
+      assert car |> Car.current_floor() == 7
+      assert car |> Car.step() == :moving_down
+      assert instructions == [:reserve_step_time]
+    end
 
-  #     refute car.step
-  #     refute car.moving_direction
-  #   end
+    test "descends one floor and starts to open doors when destination is reached by moving down" do
+      car = [step: :moving_down, destination: {2, :down}, current_floor: 3] |> build_car()
+      assert car |> Car.floors_to_handle() == [2]
 
-  #   test "starts to move up on closing doors when was moving up before stop and has upper destinations" do
-  #     car =
-  #       %Car{
-  #         step: :doors_closing,
-  #         moving_direction: :up,
-  #         lower_destinations: Prioqueue.new([3]),
-  #         upper_destinations: Prioqueue.new([5])
-  #       }
-  #       |> Car.complete_step()
+      {instructions, car} = car |> Car.complete_step()
 
-  #     assert car.step == :moving
-  #     assert car.moving_direction == :up
-  #   end
+      assert car |> Car.current_floor() == 2
+      assert car |> Car.step() == :opening_doors
+      assert car |> Car.floors_to_handle() == []
+      assert instructions == [:reserve_step_time]
+    end
 
-  #   test "starts to move down on closing doors when was moving up before stop and doesn't have an upper destination, but has lower destinations" do
-  #     car =
-  #       %Car{
-  #         step: :doors_closing,
-  #         moving_direction: :up,
-  #         lower_destinations: Prioqueue.new([5]),
-  #         upper_destinations: Prioqueue.new()
-  #       }
-  #       |> Car.complete_step()
+    test "becomes idle when there are no more destinations on closing doors" do
+      {instructions, car} =
+        [step: :closing_doors, destination: nil]
+        |> build_car()
+        |> Car.complete_step()
 
-  #     assert car.step == :moving
-  #     assert car.moving_direction == :down
-  #   end
+      assert car |> Car.step() == :idling
+      assert instructions == [:notify_new_destination]
+    end
 
-  #   test "starts to move down on closing doors when was moving down before stop and has lower destinations" do
-  #     car =
-  #       %Car{
-  #         step: :doors_closing,
-  #         moving_direction: :down,
-  #         lower_destinations: Prioqueue.new([3]),
-  #         upper_destinations: Prioqueue.new([5])
-  #       }
-  #       |> Car.complete_step()
+    test "starts to ascend on closing doors when next destination is above current floor" do
+      {instructions, car} =
+        [step: :closing_doors, destination: {3, :up}]
+        |> build_car()
+        |> Car.complete_step()
 
-  #     assert car.step == :moving
-  #     assert car.moving_direction == :down
-  #   end
+      assert car |> Car.step() == :moving_up
 
-  #   test "starts to move up on closing doors when was moving down before stop and doesn't have a lower destination, but has upper destinations" do
-  #     car =
-  #       %Car{
-  #         step: :doors_closing,
-  #         moving_direction: :down,
-  #         lower_destinations: Prioqueue.new(),
-  #         upper_destinations: Prioqueue.new([5])
-  #       }
-  #       |> Car.complete_step()
+      assert :reserve_step_time in instructions
+      assert :notify_new_destination in instructions
+    end
 
-  #     assert car.step == :moving
-  #     assert car.moving_direction == :up
-  #   end
-  # end
+    test "starts to descend on closing doors when next destination is under current floor" do
+      {instructions, car} =
+        [step: :closing_doors, destination: {3, :up}, current_floor: 5]
+        |> build_car()
+        |> Car.complete_step()
 
-  # @tag :skip
-  # describe "#push_button" do
-  #   setup do
-  #     %{car: Car.build(floor: 5)}
-  #   end
+      assert car |> Car.step() == :moving_down
 
-  #   test "starts to open doors when is on destination floor and was idling", %{car: car} do
-  #     car = car |> Car.push_button(car.current_floor)
-  #     assert car.step == :doors_opening
-  #   end
+      assert :reserve_step_time in instructions
+      assert :notify_new_destination in instructions
+    end
 
-  #   test "starts to move up when is lower than destination and was idling" do
-  #     car = %Car{current_floor: 5, step: nil} |> Car.push_button(6)
-  #     assert car.step == :moving
-  #     assert car.moving_direction == :up
-  #     assert car.upper_destinations |> Prioqueue.peek_min!() == 6
-  #   end
-  # end
+    test "starts to open doors on closing doors when next destination is current floor" do
+      {instructions, car} =
+        [step: :closing_doors, destination: {3, :up}, current_floor: 3]
+        |> build_car()
+        |> Car.complete_step()
+
+      assert car |> Car.step() == :opening_doors
+
+      assert :reserve_step_time in instructions
+      assert :notify_new_destination in instructions
+    end
+
+    test "fetches new destination from queue when reached the current destination" do
+      car =
+        [
+          step: :moving_up,
+          destination: {2, :up},
+          queue: Queue.build() |> Queue.push({6, :up}) |> Queue.push({4, :down})
+        ]
+        |> build_car()
+
+      assert car |> Car.floors_to_handle() |> Enum.sort() == [2, 4, 6]
+
+      {instructions, car} = car |> Car.complete_step()
+
+      assert car |> Car.current_floor() == 2
+      assert car |> Car.step() == :opening_doors
+      assert car |> Car.floors_to_handle() |> Enum.sort() == [4, 6]
+      assert instructions == [:reserve_step_time]
+    end
+  end
 
   defp build_car(additionals \\ []) do
     additionals |> Enum.reduce(Car.build([]), &Map.put(&2, elem(&1, 0), elem(&1, 1)))
