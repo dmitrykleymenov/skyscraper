@@ -48,7 +48,7 @@ defmodule Skyscraper.Elevator.Queue do
   def pop(queue, :down) do
     case {Prioqueue.empty?(queue.down_queue), Prioqueue.empty?(queue.up_queue)} do
       {false, _} ->
-        {:ok, {value, prioqueue}} = Prioqueue.extract_min(queue.up_queue)
+        {:ok, {value, prioqueue}} = Prioqueue.extract_min(queue.down_queue)
         {{value, :down}, queue |> Map.put(:down, prioqueue)}
 
       {true, false} ->
