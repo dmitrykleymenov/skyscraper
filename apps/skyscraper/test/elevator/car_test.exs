@@ -12,6 +12,11 @@ defmodule Skyscraper.Elevator.CarTest do
     assert %Queue{} = car.queue
   end
 
+  test "returns all acceptable floors" do
+    assert Car.build() |> Car.acceptable_floors() == 1..50 |> Enum.to_list()
+    assert Car.build(floors: [1, 2, 3]) |> Car.acceptable_floors() == [1, 2, 3]
+  end
+
   test "returns all floors to handle" do
     assert build_car() |> Car.floors_to_handle() == []
 
@@ -27,6 +32,15 @@ defmodule Skyscraper.Elevator.CarTest do
   test "returns current floor" do
     assert Car.build() |> Car.current_floor() == 1
     assert Car.build(current_floor: 5) |> Car.current_floor() == 5
+  end
+
+  test "returns current step" do
+    assert Car.builld() |> Car.step() == :idling
+    assert build_car(step: :moving_up) |> Car.step() == :moving_up
+  end
+
+  test "returns step duration" do
+    assert build_car(step_duration: 1000) |> Car.step_duration() == 1000
   end
 
   describe "#push_button" do
