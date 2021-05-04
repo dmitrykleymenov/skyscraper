@@ -1,4 +1,4 @@
-defmodule Skyscraper.Elevator.CarTest do
+defmodule Skyscraper.Elevator.ElevatorTest do
   alias Skyscraper.Elevator.Car
   use ExUnit.Case, async: true
 

@@ -94,9 +94,7 @@ defmodule Skyscraper.Elevator.Car do
   defp accept_destination({step, _dest, curr, {curr, _}}, car) when is_open_doors(step), do: car
 
   defp accept_destination({_step, nil, _curr, floor}, car) do
-    car
-    |> Map.put(:destination, floor)
-    |> add_instruction(:notify_new_destination)
+    car |> Map.put(:destination, floor)
   end
 
   defp accept_destination({_step, _dest, curr, {curr, choice}}, car) do
