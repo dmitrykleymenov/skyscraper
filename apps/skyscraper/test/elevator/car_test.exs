@@ -71,24 +71,52 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions |> Enum.empty?()
     end
 
-    # test "when destination is nil and car isn't idling takes the floor as a new destination" do
-    #   {instructions, car} = build_car(step: :opening_doors) |> Car.push_button(6)
+    test "when destination is nil puts new destination" do
+      car = build_car(current_floor: 5, step: :closing_doors)
+      assert Car.floors_to_handle(car) == []
+      {instructions, car} = car |> Car.push_button(6)
 
-    #   assert car.step == :moving_up
-    #   assert :reserve_step_time in instructions
-    #   assert :notify_new_destination in instructions
-    # end
+      assert 6 in Car.floors_to_handle(car)
+      assert car |> Car.step() == :closing_doors
+      assert instructions |> Enum.empty?()
+    end
+
+    test "when moving and request is the current floor puts request to queue" do
+      car = build_car(step: :moving_up, destination: {5, :up})
+      assert car |> Car.current_floor() == 1
+      assert car |> Car.floors_to_handle() == [5]
+      {instructions, car} = car |> Car.push_button(1)
+
+      assert car |> Car.floors_to_handle() == [5, 1]
+      assert car |> Car.step() == :moving_up
+      assert instructions |> Enum.empty?()
+    end
+
+    test "when request is between current floor and destination, changes the destination and puts the old one to queue" do
+      car = build_car(step: :moving_up, destination: {5, :up})
+      assert car |> Car.current_floor() == 1
+      assert car |> Car.floors_to_handle() == [5]
+      {instructions, car} = car |> Car.push_button(3)
+
+      assert car |> Car.floors_to_handle() == [3, 5]
+      assert car |> Car.step() == :moving_up
+      assert instructions == [:notify_new_destination]
+    end
+
+    test "when request isn't between current floor and destination, puts it to queue" do
+      car = build_car(step: :moving_up, destination: {5, :up})
+      assert car |> Car.current_floor() == 1
+      assert car |> Car.floors_to_handle() == [5]
+      {instructions, car} = car |> Car.push_button(7)
+
+      assert car |> Car.floors_to_handle() == [5, 7]
+      assert car |> Car.step() == :moving_up
+      assert instructions |> Enum.empty?()
+    end
   end
 
   # @tag :skip
-  # describe "#add_to_destinations" do
-  #   test "adds to upper destinations" do
-  #     Car.build(floor: 5) |> Car.add_to_destinations(:upper, 10)
-  #   end
-  # end
-
-  # @tag :skip
-  # describe "#complete_step" do
+  # describe "#process" do
   #   test "opens the doors when they were started to open" do
   #     car = %Car{step: :doors_opening} |> Car.complete_step()
   #     assert car.step == :doors_opened
