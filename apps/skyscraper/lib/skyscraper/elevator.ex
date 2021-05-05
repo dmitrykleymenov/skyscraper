@@ -15,6 +15,10 @@ defmodule Skyscraper.Elevator do
     GenServer.cast(name(dispatcher_id, elevator_id), {:push_car_button, floor})
   end
 
+  def get_handle_time(dispatcher_id, elevator_id, floor) do
+    GenServer.call(name(dispatcher_id, elevator_id), {:get_handle_time, floor})
+  end
+
   @impl GenServer
   def init(opts) do
     car = Car.build(opts)
@@ -36,6 +40,18 @@ defmodule Skyscraper.Elevator do
   @impl GenServer
   def handle_info(:step_completed, %{car: car} = state) do
     {:noreply, car |> Car.complete_step() |> process_state(state) |> display()}
+  end
+
+  @impl GenServer
+  def handle_call({:get_handle_time, button}, _caller, %{car: car} = state) do
+    reply =
+      if Car.can_handle?(car, button) do
+        {:ok, Car.additional_handling_time(car, button)}
+      else
+        :unhandled
+      end
+
+    {:reply, reply, state}
   end
 
   def name(dispatcher, id) do
