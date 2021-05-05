@@ -8,6 +8,7 @@ defmodule Skyscraper.Elevator.Car do
     :current_floor,
     :destination,
     :step_duration,
+    :direction,
     step: :idling,
     instructions: []
   ]
@@ -41,8 +42,12 @@ defmodule Skyscraper.Elevator.Car do
   """
 
   def push_button(%Car{} = car, floor) do
-    {car.step, car.destination, car.current_floor, {floor, determine_moving_choice(floor, car)}}
-    |> accept_destination(car)
+    if floor in car.acceptable_floors do
+      {car.step, car.destination, car.current_floor, {floor, determine_moving_choice(floor, car)}}
+      |> accept_destination(car)
+    else
+      car
+    end
     |> extract_instructions()
   end
 
@@ -69,6 +74,7 @@ defmodule Skyscraper.Elevator.Car do
   @doc """
     returns the current step
   """
+  def step(%Car{step: :moving} = car), do: "moving_#{car.direction}" |> String.to_atom()
   def step(%Car{step: step}), do: step
 
   @doc """
@@ -76,11 +82,61 @@ defmodule Skyscraper.Elevator.Car do
   """
   def current_floor(%Car{current_floor: current_floor}), do: current_floor
 
+  @doc """
+    calculates delta of handling current destination directly from handling current destination through new request
+  """
+
+  def additional_handling_time(%Car{} = car, new_dest) do
+    processing_time(car |> inject_destination(new_dest)) - processing_time(car)
+  end
+
+  def can_handle?(%Car{destination: nil} = car, {floor, _moving_choice}) do
+    floor in car.acceptable_floors
+  end
+
+  def can_handle?(%Car{destination: {dest, _choice}}, {floor, :up}) when dest < floor, do: false
+
+  def can_handle?(%Car{destination: {dest, _choice}}, {floor, :down}) when dest > floor,
+    do: false
+
+  def can_handle?(%Car{destination: {dest, choice1}}, {dest, choice2}), do: choice1 == choice2
+
+  def can_handle?(%Car{step: step, current_floor: floor}, {floor, _moving_direction})
+      when step != :moving,
+      do: true
+
+  def can_handle?(
+        %Car{destination: {dest, _moving_choice1}, current_floor: curr},
+        {floor, _moving_choice2}
+      )
+      when curr in floor..dest,
+      do: false
+
+  def can_handle?(%Car{destination: {dest, :down}} = car, {_floor, :up})
+      when car.current_floor > dest,
+      do: false
+
+  def can_handle?(%Car{destination: {dest, :up}} = car, {_floor, :down})
+      when car.current_floor < dest,
+      do: false
+
+  def can_handle?(car, {floor, _moving_choice}), do: floor in car.acceptable_floors
+
+  defp inject_destination(car, new_dest) do
+    car
+    |> Map.put(:queue, Queue.push(car.queue, car.destination))
+    |> Map.put(:destination, new_dest)
+  end
+
+  def processing_time(_car) do
+    5
+  end
+
   defp determine_moving_choice(floor, %Car{current_floor: curr}) when floor > curr, do: :up
   defp determine_moving_choice(floor, %Car{current_floor: cur}) when floor < cur, do: :down
   defp determine_moving_choice(_floor, %Car{destination: nil}), do: :down
-  defp determine_moving_choice(_floor, %Car{step: :moving_up}), do: :down
-  defp determine_moving_choice(_floor, %Car{step: :moving_down}), do: :up
+  defp determine_moving_choice(_floor, %Car{step: :moving, direction: :up}), do: :down
+  defp determine_moving_choice(_floor, %Car{step: :moving, direction: :down}), do: :up
 
   defp determine_moving_choice(floor, %Car{destination: {dest, _moving_choice}}) do
     if floor < dest, do: :up, else: :down
@@ -102,13 +158,26 @@ defmodule Skyscraper.Elevator.Car do
   end
 
   defp accept_destination(
-         {_step, {dest, dest_moving_choice}, curr, {floor, floor_moving_choice}},
+         {_step, {dest, _moving_choice}, curr, {floor, moving_choice}},
          car
        )
        when floor in curr..dest do
     car
-    |> Map.put(:queue, Queue.push(car.queue, {dest, dest_moving_choice}))
-    |> Map.put(:destination, {floor, floor_moving_choice})
+    |> inject_destination({floor, moving_choice})
+    |> add_instruction(:notify_new_destination)
+  end
+
+  defp accept_destination({_step, {dest, :down}, curr, {floor, moving_choice}}, car)
+       when curr < dest and dest < floor do
+    car
+    |> inject_destination({floor, moving_choice})
+    |> add_instruction(:notify_new_destination)
+  end
+
+  defp accept_destination({_step, {dest, :up}, curr, {floor, moving_choice}}, car)
+       when curr > dest and dest > floor do
+    car
+    |> inject_destination({floor, moving_choice})
     |> add_instruction(:notify_new_destination)
   end
 
@@ -125,8 +194,8 @@ defmodule Skyscraper.Elevator.Car do
   end
 
   defp process(%Car{step: :closing_doors} = car), do: car |> close_doors()
-  defp process(%Car{step: :moving_up} = car), do: car |> ascend()
-  defp process(%Car{step: :moving_down} = car), do: car |> descend()
+  defp process(%Car{step: :moving, direction: :up} = car), do: car |> ascend()
+  defp process(%Car{step: :moving, direction: :down} = car), do: car |> descend()
 
   defp ascend(%{current_floor: floor} = car) do
     car
@@ -162,15 +231,30 @@ defmodule Skyscraper.Elevator.Car do
     car |> actualize_moving_step()
   end
 
-  defp actualize_moving_step(
-         %Car{destination: {dest, _moving_choice}, current_floor: floor} = car
-       ) do
+  defp actualize_moving_step(%Car{destination: {dest, _moving_choice}} = car) do
     cond do
-      car.step != :moving_up && dest > floor -> car |> set_step(:moving_up)
-      car.step != :moving_down && dest < floor -> car |> set_step(:moving_down)
-      true -> car |> add_instruction(:reserve_step_time)
+      !(car.step == :moving && car.direction == :up) && dest > car.current_floor ->
+        car
+        |> Map.put(:direction, :up)
+        |> set_step(:moving)
+
+      !(car.step == :moving && car.direction == :down) && dest < car.current_floor ->
+        car
+        |> Map.put(:direction, :down)
+        |> set_step(:moving)
+
+      true ->
+        car
+        |> add_instruction(:reserve_step_time)
     end
   end
+
+  # defp handling_time(start, finish) do
+  #   abs(finish - start) * duration(:moving) +
+  #     duration(:orening_doors) +
+  #     duration(:doors_open) +
+  #     duration(:closing_doors)
+  # end
 
   defp set_step(car, :idling), do: car |> Map.put(:step, :idling)
 

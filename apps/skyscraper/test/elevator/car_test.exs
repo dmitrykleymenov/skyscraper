@@ -127,6 +127,62 @@ defmodule Skyscraper.Elevator.CarTest do
       assert car |> Car.step() == :moving_up
       assert instructions |> Enum.empty?()
     end
+
+    test "prioritizes down direction requests when descending" do
+      car =
+        [
+          step: :moving,
+          direction: :down,
+          destination: {7, :up},
+          current_floor: 9
+        ]
+        |> build_car()
+
+      assert car |> Car.floors_to_handle() == [7]
+
+      {instructions, car} = car |> Car.push_button(6)
+
+      assert car |> Car.floors_to_handle() == [6, 7]
+      assert car |> Car.step() == :moving_down
+      assert instructions == [:notify_new_destination]
+    end
+
+    # test "TEST" do
+    #   car =
+    #     [
+    #       step: :moving,
+    #       direction: :down,
+    #       destination: {5, :up},
+    #       current_floor: 7
+    #     ]
+    #     |> build_car()
+
+    #   assert car |> Car.floors_to_handle() == [5]
+
+    #   {instructions, car} = car |> Car.push_button(9)
+
+    #   assert car |> Car.floors_to_handle() == [5, 9]
+    #   assert car |> Car.step() == :moving_down
+    #   assert instructions == []
+    # end
+
+    test "prioritizes up direction requests when ascending" do
+      car =
+        [
+          step: :moving,
+          direction: :up,
+          destination: {7, :down}
+        ]
+        |> build_car()
+
+      assert car |> Car.floors_to_handle() == [7]
+
+      {instructions, car} = car |> Car.push_button(8)
+
+      assert car |> Car.floors_to_handle() == [8, 7]
+      assert car |> Car.step() == :moving_up
+      assert instructions == [:notify_new_destination]
+    end
   end
 
   describe "#complete_step" do
@@ -146,7 +202,7 @@ defmodule Skyscraper.Elevator.CarTest do
 
     test "ascends one floor and keeps moving up when destination isn't reached" do
       {instructions, car} =
-        [step: :moving_up, destination: {6, :up}]
+        [step: :moving, direction: :up, destination: {6, :up}]
         |> build_car()
         |> Car.complete_step()
 
@@ -156,7 +212,7 @@ defmodule Skyscraper.Elevator.CarTest do
     end
 
     test "ascends one floor and starts to open doors when destination is reached" do
-      car = [step: :moving_up, destination: {2, :up}] |> build_car()
+      car = [step: :moving, direction: :up, destination: {2, :up}] |> build_car()
       assert car |> Car.floors_to_handle() == [2]
 
       {instructions, car} = car |> Car.complete_step()
@@ -169,7 +225,7 @@ defmodule Skyscraper.Elevator.CarTest do
 
     test "descends one floor and keeps moving down when destination isn't reached" do
       {instructions, car} =
-        [step: :moving_down, destination: {6, :down}, current_floor: 8]
+        [step: :moving, direction: :down, destination: {6, :down}, current_floor: 8]
         |> build_car()
         |> Car.complete_step()
 
@@ -179,7 +235,10 @@ defmodule Skyscraper.Elevator.CarTest do
     end
 
     test "descends one floor and starts to open doors when destination is reached by moving down" do
-      car = [step: :moving_down, destination: {2, :down}, current_floor: 3] |> build_car()
+      car =
+        [step: :moving, direction: :down, destination: {2, :down}, current_floor: 3]
+        |> build_car()
+
       assert car |> Car.floors_to_handle() == [2]
 
       {instructions, car} = car |> Car.complete_step()
@@ -239,7 +298,8 @@ defmodule Skyscraper.Elevator.CarTest do
     test "fetches new destination from queue when reached the current destination" do
       car =
         [
-          step: :moving_up,
+          step: :moving,
+          direction: :up,
           destination: {2, :up},
           queue: Queue.build() |> Queue.push({6, :up}) |> Queue.push({4, :down})
         ]
