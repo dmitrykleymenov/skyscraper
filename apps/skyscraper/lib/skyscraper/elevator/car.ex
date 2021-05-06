@@ -94,7 +94,7 @@ defmodule Skyscraper.Elevator.Car do
   end
 
   @doc """
-    Answer if car can handle moving request
+    Answers if car can handle moving request
   """
   def can_handle?(%Car{destination: nil} = car, {floor, _moving_choice}) do
     floor in car.acceptable_floors
