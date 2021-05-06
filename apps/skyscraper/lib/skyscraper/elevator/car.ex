@@ -138,7 +138,7 @@ defmodule Skyscraper.Elevator.Car do
 
   defp processing_time(car) do
     car = car |> process()
-    [car |> step_duration() | processing_time(car)] |> Enum.sum()
+    (car |> step_duration()) + processing_time(car)
   end
 
   defp determine_moving_choice(floor, %Car{current_floor: curr}) when floor > curr, do: :up
