@@ -1,13 +1,13 @@
 defmodule Skyscraper.Elevator.Car do
   alias Skyscraper.Elevator.{Car, Queue}
-  @step_duration 1000
+  @default_step_duration 1000
 
   defstruct [
     :queue,
     :acceptable_floors,
     :current_floor,
     :destination,
-    :step_duration,
+    :step_durations,
     :direction,
     step: :idling,
     instructions: []
@@ -23,7 +23,8 @@ defmodule Skyscraper.Elevator.Car do
     %Car{
       queue: Queue.build(),
       acceptable_floors: Keyword.get(opts, :floors, 1..50 |> Enum.to_list()),
-      current_floor: Keyword.get(opts, :current_floor, 1)
+      current_floor: Keyword.get(opts, :current_floor, 1),
+      step_durations: Keyword.get(opts, :step_durations, %{})
     }
   end
 
@@ -55,7 +56,9 @@ defmodule Skyscraper.Elevator.Car do
     Returns current step duration
   """
 
-  def step_duration(%Car{step_duration: step_duration}), do: step_duration
+  def step_duration(%Car{step_durations: durations} = car) do
+    durations |> Map.get(car |> step(), @default_step_duration)
+  end
 
   @doc """
     Returns acceptable floors for that car
@@ -72,24 +75,27 @@ defmodule Skyscraper.Elevator.Car do
   end
 
   @doc """
-    returns the current step
+    Returns the current step
   """
   def step(%Car{step: :moving} = car), do: "moving_#{car.direction}" |> String.to_atom()
   def step(%Car{step: step}), do: step
 
   @doc """
-    returns the current floor
+    Returns the current floor
   """
   def current_floor(%Car{current_floor: current_floor}), do: current_floor
 
   @doc """
-    calculates delta of handling current destination directly from handling current destination through new request
+    Calculates delta of handling current destination directly from handling current destination through new request
   """
 
   def additional_handling_time(%Car{} = car, new_dest) do
     processing_time(car |> inject_destination(new_dest)) - processing_time(car)
   end
 
+  @doc """
+    Answer if car can handle moving request
+  """
   def can_handle?(%Car{destination: nil} = car, {floor, _moving_choice}) do
     floor in car.acceptable_floors
   end
@@ -128,8 +134,11 @@ defmodule Skyscraper.Elevator.Car do
     |> Map.put(:destination, new_dest)
   end
 
-  def processing_time(_car) do
-    5
+  defp processing_time(%Car{step: :idling}), do: 0
+
+  defp processing_time(car) do
+    car = car |> process()
+    [car |> step_duration() | processing_time(car)] |> Enum.sum()
   end
 
   defp determine_moving_choice(floor, %Car{current_floor: curr}) when floor > curr, do: :up
@@ -260,12 +269,8 @@ defmodule Skyscraper.Elevator.Car do
 
   defp set_step(car, step) do
     car
-    |> Map.merge(%{step: step, step_duration: duration(step)})
+    |> Map.put(:step, step)
     |> add_instruction(:reserve_step_time)
-  end
-
-  defp duration(_step) do
-    @step_duration
   end
 
   defp extract_instructions(%Car{instructions: instructions} = car) do
