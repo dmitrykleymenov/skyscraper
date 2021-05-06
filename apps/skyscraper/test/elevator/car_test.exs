@@ -1,7 +1,16 @@
 defmodule Skyscraper.Elevator.CarTest do
   alias Skyscraper.Elevator.{Car, Queue}
   use ExUnit.Case, async: true
-  doctest Car
+  # doctest Car
+
+  setup context do
+    car =
+      context
+      |> Map.get(:additionals, [])
+      |> Enum.reduce(Car.build([]), &Map.put(&2, elem(&1, 0), elem(&1, 1)))
+
+    %{car: car}
+  end
 
   test "builds a Car struct with the given params" do
     car = Car.build(current_floor: 5, floors: [4, 5, 6])
@@ -12,40 +21,54 @@ defmodule Skyscraper.Elevator.CarTest do
     assert %Queue{} = car.queue
   end
 
-  test "returns all acceptable floors" do
-    assert Car.build() |> Car.acceptable_floors() == 1..50 |> Enum.to_list()
+  test "returns all acceptable floors", %{car: car} do
+    assert car |> Car.acceptable_floors() == 1..50 |> Enum.to_list()
     assert Car.build(floors: [1, 2, 3]) |> Car.acceptable_floors() == [1, 2, 3]
   end
 
-  test "returns all floors to handle" do
-    assert build_car() |> Car.floors_to_handle() == []
+  test "returns empty list when nothing to handle", %{car: car} do
+    assert car |> Car.floors_to_handle() == []
+  end
 
-    car =
-      build_car(
-        destination: {5, :up},
-        queue: Queue.build() |> Queue.push({6, :up}) |> Queue.push({4, :down})
-      )
+  @tag additionals: [
+         destination: {5, :up},
+         queue: Queue.build() |> Queue.push({6, :up}) |> Queue.push({4, :down})
+       ]
 
+  test "returns all floors to handle", %{car: car} do
     assert car |> Car.floors_to_handle() |> Enum.sort() == [4, 5, 6]
   end
 
-  test "returns current floor" do
-    assert Car.build() |> Car.current_floor() == 1
-    assert Car.build(current_floor: 5) |> Car.current_floor() == 5
+  @tag additionals: [current_floor: 5]
+  test "returns current floor", %{car: car} do
+    assert car |> Car.current_floor() == 5
   end
 
-  test "returns current step" do
-    assert Car.build() |> Car.step() == :idling
-    assert build_car(step: :moving_up) |> Car.step() == :moving_up
+  test "returns default floor when floor wasn't provided", %{car: car} do
+    assert car |> Car.current_floor() == 1
   end
 
-  test "returns step duration" do
-    assert build_car(step_duration: 1000) |> Car.step_duration() == 1000
+  @tag additionals: [step: :moving, direction: :up]
+  test "returns current step", %{car: car} do
+    assert car |> Car.step() == :moving_up
   end
 
-  describe "#push_button" do
-    test "opens the doors when idling and is on the destination floor" do
-      car = build_car(current_floor: 6)
+  test "returns idling on the start", %{car: car} do
+    assert car |> Car.step() == :idling
+  end
+
+  @tag additionals: [step: :moving, direction: :up, step_durations: %{moving_up: 3000}]
+  test "returns appropriate step duration", %{car: car} do
+    assert car |> Car.step_duration() == 3000
+  end
+
+  test "returns default if step duration wasn't provided", %{car: car} do
+    assert car |> Car.step_duration() == 1000
+  end
+
+  describe ".push_button/2" do
+    @tag additionals: [current_floor: 6]
+    test "opens the doors when idling and is on the destination floor", %{car: car} do
       assert car |> Car.step() == :idling
       assert car |> Car.current_floor() == 6
       assert car |> Car.floors_to_handle() |> Enum.empty?()
@@ -57,8 +80,8 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions == [:reserve_step_time]
     end
 
-    test "starts moving and gives start instructions when idling and isn't on the destination floor" do
-      car = build_car()
+    test "starts moving and gives start instructions when idling and isn't on the destination floor",
+         %{car: car} do
       assert car |> Car.step() == :idling
       assert car |> Car.current_floor() == 1
       assert car |> Car.floors_to_handle() |> Enum.empty?()
@@ -69,25 +92,27 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions == [:reserve_step_time]
     end
 
-    test "ignores the command when new floor request is destination floor and car isn't idling" do
-      car = build_car(destination: {6, :up}, step: :moving_up)
+    @tag additionals: [destination: {6, :up}, step: :moving, direction: :up]
+    test "ignores the command when new floor request is destination floor and car isn't idling",
+         %{car: car} do
       {instructions, new_car} = car |> Car.push_button(6)
 
       assert car == new_car
       assert instructions |> Enum.empty?()
     end
 
-    test "ignores the command when new floor request is current floor and car is opening doors" do
-      car = build_car(current_floor: 6, step: :opening_doors)
+    @tag additionals: [current_floor: 6, step: :opening_doors]
+    test "ignores the command when new floor request is current floor and car is opening doors",
+         %{car: car} do
       {instructions, new_car} = car |> Car.push_button(6)
 
       assert car == new_car
       assert instructions |> Enum.empty?()
     end
 
-    test "puts new destination when destination is nil" do
-      car = build_car(current_floor: 5, step: :closing_doors)
-      assert Car.floors_to_handle(car) == []
+    @tag additionals: [current_floor: 5, step: :closing_doors]
+    test "puts new destination when destination is nil", %{car: car} do
+      assert car |> Car.floors_to_handle() == []
       {instructions, car} = car |> Car.push_button(6)
 
       assert 6 in Car.floors_to_handle(car)
@@ -95,8 +120,8 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions |> Enum.empty?()
     end
 
-    test "puts request to queue when moving and request is the current floor" do
-      car = build_car(step: :moving_up, destination: {5, :up})
+    @tag additionals: [step: :moving, direction: :up, destination: {5, :up}]
+    test "puts request to queue when moving and request is the current floor", %{car: car} do
       assert car |> Car.current_floor() == 1
       assert car |> Car.floors_to_handle() == [5]
       {instructions, car} = car |> Car.push_button(1)
@@ -106,8 +131,9 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions |> Enum.empty?()
     end
 
-    test "changes the destination and puts the old one to queue when request is between current floor and destination" do
-      car = build_car(step: :moving_up, destination: {5, :up})
+    @tag additionals: [step: :moving, direction: :up, destination: {5, :up}]
+    test "changes the destination and puts the old one to queue when request is between current floor and destination",
+         %{car: car} do
       assert car |> Car.current_floor() == 1
       assert car |> Car.floors_to_handle() == [5]
       {instructions, car} = car |> Car.push_button(3)
@@ -117,8 +143,8 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions == [:notify_new_destination]
     end
 
-    test "puts it to queue when request isn't between current floor and destination" do
-      car = build_car(step: :moving_up, destination: {5, :up})
+    @tag additionals: [step: :moving, direction: :up, destination: {5, :up}]
+    test "puts it to queue when request isn't between current floor and destination", %{car: car} do
       assert car |> Car.current_floor() == 1
       assert car |> Car.floors_to_handle() == [5]
       {instructions, car} = car |> Car.push_button(7)
@@ -128,16 +154,13 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions |> Enum.empty?()
     end
 
-    test "prioritizes down direction requests when descending" do
-      car =
-        [
-          step: :moving,
-          direction: :down,
-          destination: {7, :up},
-          current_floor: 9
-        ]
-        |> build_car()
-
+    @tag additionals: [
+           step: :moving,
+           direction: :down,
+           destination: {7, :up},
+           current_floor: 9
+         ]
+    test "prioritizes down direction requests when descending", %{car: car} do
       assert car |> Car.floors_to_handle() == [7]
 
       {instructions, car} = car |> Car.push_button(6)
@@ -147,34 +170,8 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions == [:notify_new_destination]
     end
 
-    # test "TEST" do
-    #   car =
-    #     [
-    #       step: :moving,
-    #       direction: :down,
-    #       destination: {5, :up},
-    #       current_floor: 7
-    #     ]
-    #     |> build_car()
-
-    #   assert car |> Car.floors_to_handle() == [5]
-
-    #   {instructions, car} = car |> Car.push_button(9)
-
-    #   assert car |> Car.floors_to_handle() == [5, 9]
-    #   assert car |> Car.step() == :moving_down
-    #   assert instructions == []
-    # end
-
-    test "prioritizes up direction requests when ascending" do
-      car =
-        [
-          step: :moving,
-          direction: :up,
-          destination: {7, :down}
-        ]
-        |> build_car()
-
+    @tag additionals: [step: :moving, direction: :up, destination: {7, :down}]
+    test "prioritizes up direction requests when ascending", %{car: car} do
       assert car |> Car.floors_to_handle() == [7]
 
       {instructions, car} = car |> Car.push_button(8)
@@ -185,34 +182,116 @@ defmodule Skyscraper.Elevator.CarTest do
     end
   end
 
-  describe "#complete_step" do
-    test "opens the doors when they were started to open" do
-      {instructions, car} = build_car(step: :opening_doors) |> Car.complete_step()
+  describe ".can_handle?/2" do
+    test "thuthy when destination is empty", %{car: car} do
+      assert car |> Car.can_handle?({5, :up})
+    end
+
+    @tag additionals: [acceptable_floors: [3, 4, 6]]
+    test "falsey when request out of accaptable floors range", %{car: car} do
+      refute car |> Car.can_handle?({5, :up})
+    end
+
+    @tag additionals: [destination: {5, :up}, current_floor: 3]
+    test "falsey when request moving choice is up and destination is below", %{car: car} do
+      refute car |> Car.can_handle?({7, :up})
+    end
+
+    @tag additionals: [destination: {5, :down}, current_floor: 7]
+    test "falsey when request moving choice is down and destination is above", %{car: car} do
+      refute car |> Car.can_handle?({3, :up})
+    end
+
+    @tag additionals: [destination: {5, :down}, current_floor: 7]
+    test "falsey when request floor is destination floor and moving choices are different", %{
+      car: car
+    } do
+      refute car |> Car.can_handle?({5, :up})
+    end
+
+    @tag additionals: [destination: {5, :down}, current_floor: 7]
+    test "truthy when request is equal to destination", %{car: car} do
+      assert car |> Car.can_handle?({5, :down})
+    end
+
+    @tag additionals: [destination: {3, :down}, current_floor: 5]
+    test "truthy when step isn't moving and request is the current floor with down moving choice",
+         %{car: car} do
+      assert car |> Car.can_handle?({5, :down})
+    end
+
+    @tag additionals: [destination: {7, :down}, current_floor: 5]
+    test "truthy when step isn't moving and request is the current floor with up moving choice",
+         %{car: car} do
+      assert car |> Car.can_handle?({5, :up})
+    end
+
+    @tag additionals: [step: :moving, destination: {7, :up}, current_floor: 5]
+    test "falsey when step moving and request is the current floor with up moving choice", %{
+      car: car
+    } do
+      refute car |> Car.can_handle?({5, :up})
+    end
+
+    @tag additionals: [destination: {7, :up}, current_floor: 5]
+    test "falsey when current floor in between destination and request", %{car: car} do
+      refute car |> Car.can_handle?({3, :up})
+    end
+
+    @tag additionals: [destination: {5, :up}, current_floor: 2]
+    test "falsey when request is further than destination and destination moving choice is up", %{
+      car: car
+    } do
+      refute car |> Car.can_handle?({7, :down})
+    end
+
+    @tag additionals: [destination: {5, :down}, current_floor: 7]
+    test "falsey when request is further than destination and destination moving choice is down",
+         %{car: car} do
+      refute car |> Car.can_handle?({3, :up})
+    end
+
+    @tag additionals: [destination: {5, :up}, current_floor: 7]
+    test "truthy when request is further than destination but has the same moving choice", %{
+      car: car
+    } do
+      assert car |> Car.can_handle?({3, :up})
+    end
+
+    @tag additionals: [destination: {5, :down}, current_floor: 9]
+    test "truthy when request is on the way to destination", %{car: car} do
+      assert car |> Car.can_handle?({7, :down})
+    end
+  end
+
+  describe ".complete_step/1" do
+    @tag additionals: [step: :opening_doors]
+    test "opens the doors when they were started to open", %{car: car} do
+      {instructions, car} = car |> Car.complete_step()
 
       assert car |> Car.step() == :doors_open
       assert instructions == [:reserve_step_time]
     end
 
-    test "starts to close the doors when they were opened" do
-      {instructions, car} = build_car(step: :doors_open) |> Car.complete_step()
+    @tag additionals: [step: :doors_open]
+    test "starts to close the doors when they were opened", %{car: car} do
+      {instructions, car} = car |> Car.complete_step()
 
       assert car |> Car.step() == :closing_doors
       assert instructions == [:reserve_step_time]
     end
 
-    test "ascends one floor and keeps moving up when destination isn't reached" do
-      {instructions, car} =
-        [step: :moving, direction: :up, destination: {6, :up}]
-        |> build_car()
-        |> Car.complete_step()
+    @tag additionals: [step: :moving, direction: :up, destination: {6, :up}]
+    test "ascends one floor and keeps moving up when destination isn't reached", %{car: car} do
+      {instructions, car} = car |> Car.complete_step()
 
       assert car |> Car.current_floor() == 2
       assert car |> Car.step() == :moving_up
       assert instructions == [:reserve_step_time]
     end
 
-    test "ascends one floor and starts to open doors when destination is reached" do
-      car = [step: :moving, direction: :up, destination: {2, :up}] |> build_car()
+    @tag additionals: [step: :moving, direction: :up, destination: {2, :up}]
+    test "ascends one floor and starts to open doors when destination is reached", %{car: car} do
       assert car |> Car.floors_to_handle() == [2]
 
       {instructions, car} = car |> Car.complete_step()
@@ -223,22 +302,18 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions == [:reserve_step_time]
     end
 
-    test "descends one floor and keeps moving down when destination isn't reached" do
-      {instructions, car} =
-        [step: :moving, direction: :down, destination: {6, :down}, current_floor: 8]
-        |> build_car()
-        |> Car.complete_step()
+    @tag additionals: [step: :moving, direction: :down, destination: {6, :down}, current_floor: 8]
+    test "descends one floor and keeps moving down when destination isn't reached", %{car: car} do
+      {instructions, car} = car |> Car.complete_step()
 
       assert car |> Car.current_floor() == 7
       assert car |> Car.step() == :moving_down
       assert instructions == [:reserve_step_time]
     end
 
-    test "descends one floor and starts to open doors when destination is reached by moving down" do
-      car =
-        [step: :moving, direction: :down, destination: {2, :down}, current_floor: 3]
-        |> build_car()
-
+    @tag additionals: [step: :moving, direction: :down, destination: {2, :down}, current_floor: 3]
+    test "descends one floor and starts to open doors when destination is reached by moving down",
+         %{car: car} do
       assert car |> Car.floors_to_handle() == [2]
 
       {instructions, car} = car |> Car.complete_step()
@@ -249,62 +324,50 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions == [:reserve_step_time]
     end
 
-    test "becomes idle when there are no more destinations on closing doors" do
-      {instructions, car} =
-        [step: :closing_doors, destination: nil]
-        |> build_car()
-        |> Car.complete_step()
+    @tag additionals: [step: :closing_doors, destination: nil]
+    test "becomes idle when there are no more destinations on closing doors", %{car: car} do
+      {instructions, car} = car |> Car.complete_step()
 
       assert car |> Car.step() == :idling
       assert instructions == [:notify_new_destination]
     end
 
-    test "starts to ascend on closing doors when next destination is above current floor" do
-      {instructions, car} =
-        [step: :closing_doors, destination: {3, :up}]
-        |> build_car()
-        |> Car.complete_step()
+    @tag additionals: [step: :closing_doors, destination: {3, :up}]
+    test "starts to ascend on closing doors when next destination is above", %{car: car} do
+      {instructions, car} = car |> Car.complete_step()
 
       assert car |> Car.step() == :moving_up
-
       assert :reserve_step_time in instructions
       assert :notify_new_destination in instructions
     end
 
-    test "starts to descend on closing doors when next destination is under current floor" do
-      {instructions, car} =
-        [step: :closing_doors, destination: {3, :up}, current_floor: 5]
-        |> build_car()
-        |> Car.complete_step()
+    @tag additionals: [step: :closing_doors, destination: {3, :up}, current_floor: 5]
+    test "starts to descend on closing doors when next destination is below", %{car: car} do
+      {instructions, car} = car |> Car.complete_step()
 
       assert car |> Car.step() == :moving_down
-
       assert :reserve_step_time in instructions
       assert :notify_new_destination in instructions
     end
 
-    test "starts to open doors on closing doors when next destination is current floor" do
-      {instructions, car} =
-        [step: :closing_doors, destination: {3, :up}, current_floor: 3]
-        |> build_car()
-        |> Car.complete_step()
+    @tag additionals: [step: :closing_doors, destination: {3, :up}, current_floor: 3]
+    test "starts to open doors on closing doors when next destination is current floor", %{
+      car: car
+    } do
+      {instructions, car} = car |> Car.complete_step()
 
       assert car |> Car.step() == :opening_doors
-
       assert :reserve_step_time in instructions
       assert :notify_new_destination in instructions
     end
 
-    test "fetches new destination from queue when reached the current destination" do
-      car =
-        [
-          step: :moving,
-          direction: :up,
-          destination: {2, :up},
-          queue: Queue.build() |> Queue.push({6, :up}) |> Queue.push({4, :down})
-        ]
-        |> build_car()
-
+    @tag additionals: [
+           step: :moving,
+           direction: :up,
+           destination: {2, :up},
+           queue: Queue.build() |> Queue.push({6, :up}) |> Queue.push({4, :down})
+         ]
+    test "fetches new destination from queue when reached the current destination", %{car: car} do
       assert car |> Car.floors_to_handle() |> Enum.sort() == [2, 4, 6]
 
       {instructions, car} = car |> Car.complete_step()
@@ -314,9 +377,5 @@ defmodule Skyscraper.Elevator.CarTest do
       assert car |> Car.floors_to_handle() |> Enum.sort() == [4, 6]
       assert instructions == [:reserve_step_time]
     end
-  end
-
-  defp build_car(additionals \\ []) do
-    additionals |> Enum.reduce(Car.build([]), &Map.put(&2, elem(&1, 0), elem(&1, 1)))
   end
 end
