@@ -378,4 +378,52 @@ defmodule Skyscraper.Elevator.CarTest do
       assert instructions == [:reserve_step_time]
     end
   end
+
+  describe ".additional_handling_time/2" do
+    setup %{car: car} do
+      car =
+        car
+        |> Map.put(:step_durations, %{
+          opening_doors: 1,
+          doors_open: 10,
+          closing_doors: 100,
+          moving_up: 1000,
+          moving_down: 10000
+        })
+
+      %{car: car}
+    end
+
+    @tag additionals: [destination: {6, :up}, current_floor: 2, step: :moving, direction: :up]
+    test "returns only doors status changing time when request direction is up and destination on the way",
+         %{
+           car: car
+         } do
+      assert car |> Car.additional_handling_time({4, :up}) == 111
+    end
+
+    @tag additionals: [destination: {3, :down}, current_floor: 8, step: :moving, direction: :down]
+    test "returns only doors status changing time when request direction is down and destination on the way",
+         %{
+           car: car
+         } do
+      assert car |> Car.additional_handling_time({5, :down}) == 111
+    end
+
+    @tag additionals: [destination: {5, :up}, current_floor: 7, step: :moving, direction: :down]
+    test "returns doors status changing, ascend and descend time when destination is lower than request and request moving choice is up",
+         %{
+           car: car
+         } do
+      assert car |> Car.additional_handling_time({3, :up}) == 22111
+    end
+
+    @tag additionals: [destination: {5, :down}, current_floor: 2, step: :moving, direction: :down]
+    test "returns doors status changing, ascend and descend time when destination is higher than request and request moving choice is down",
+         %{
+           car: car
+         } do
+      assert car |> Car.additional_handling_time({7, :down}) == 22111
+    end
+  end
 end
