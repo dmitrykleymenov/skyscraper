@@ -1,5 +1,6 @@
 defmodule Skyscraper do
-  alias Skyscraper.{BuildingsSupervisor, BuildingSupervisor, Elevator, ConsoleDisplay}
+  alias Skyscraper.Elevator.Server, as: Elevator
+  alias Skyscraper.{BuildingsSupervisor, BuildingSupervisor, ConsoleDisplay}
 
   @moduledoc """
   Skyscraper keeps the contexts that define your domain
