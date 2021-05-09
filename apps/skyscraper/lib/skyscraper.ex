@@ -18,7 +18,7 @@ defmodule Skyscraper do
       building: name,
       floors: Keyword.fetch!(arg, :floors_amount) |> floors(),
       elevator_ids: Keyword.fetch!(arg, :elevators_quantity) |> elevator_ids(),
-      interface_mod: Keyword.get(arg, :interface_mod, Console)
+      interface_mods: Keyword.get(arg, :interface_mods, [Console])
     ]
 
     DynamicSupervisor.start_child(

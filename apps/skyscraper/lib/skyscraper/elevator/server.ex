@@ -28,7 +28,7 @@ defmodule Skyscraper.Elevator.Server do
        elevator: elevator,
        building: Keyword.fetch!(opts, :building),
        id: Keyword.fetch!(opts, :id),
-       interface_mod: Keyword.fetch!(opts, :interface_mod)
+       interface_mods: Keyword.fetch!(opts, :interface_mods)
      }}
   end
 
@@ -74,13 +74,15 @@ defmodule Skyscraper.Elevator.Server do
   end
 
   defp display(state) do
-    Task.Supervisor.start_child(Skyscraper.TaskSupervisor, fn ->
-      Interface.change_elevator_state(
-        state.interface_mod,
-        state.building,
-        state.id,
-        state.elevator
-      )
+    Enum.each(state.interface_mods, fn interface_mod ->
+      Task.Supervisor.start_child(Skyscraper.TaskSupervisor, fn ->
+        Interface.change_elevator_state(
+          interface_mod,
+          state.building,
+          state.id,
+          state.elevator
+        )
+      end)
     end)
 
     state
