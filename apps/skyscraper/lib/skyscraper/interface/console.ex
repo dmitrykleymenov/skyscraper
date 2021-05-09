@@ -1,15 +1,15 @@
-defmodule Skyscraper.ConsoleDisplay do
-  alias Skyscraper.Display
-  @behaviour Display
+defmodule Skyscraper.Interface.Console do
+  alias Skyscraper.Interface
+  @behaviour Interface
 
-  @impl Display
+  @impl Interface
   def elevator_state_changed(elevator) do
     elevator
     |> format_elevator_status()
     |> IO.puts()
   end
 
-  @impl Display
+  @impl Interface
   def dispatcher_state_changed({}) do
     :ok
   end

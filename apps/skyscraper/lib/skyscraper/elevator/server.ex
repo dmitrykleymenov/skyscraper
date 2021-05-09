@@ -1,8 +1,8 @@
 defmodule Skyscraper.Elevator.Server do
   use GenServer
   require IEx
-  alias Skyscraper.Elevator
-  alias Skyscraper.{Dispatcher, Display}
+  alias Skyscraper.Dispatcher.Server, as: Dispatcher
+  alias Skyscraper.{Elevator, Interface}
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: name_from_opts(opts))
@@ -26,9 +26,9 @@ defmodule Skyscraper.Elevator.Server do
     {:ok,
      %{
        elevator: elevator,
-       dispatcher: Keyword.fetch!(opts, :dispatcher),
+       building: Keyword.fetch!(opts, :building),
        id: Keyword.fetch!(opts, :id),
-       callback_mod: Keyword.fetch!(opts, :callback_mod)
+       interface_mod: Keyword.fetch!(opts, :interface_mod)
      }}
   end
 
@@ -51,12 +51,12 @@ defmodule Skyscraper.Elevator.Server do
     {:reply, reply, state}
   end
 
-  def name(dispatcher, id) do
-    {:via, Registry, {Skyscraper.Registry, {__MODULE__, dispatcher, id}}}
+  def name(building, id) do
+    {:via, Registry, {Skyscraper.Registry, {__MODULE__, building, id}}}
   end
 
   defp name_from_opts(opts) do
-    name(Keyword.fetch!(opts, :dispatcher), Keyword.fetch!(opts, :id))
+    name(Keyword.fetch!(opts, :building), Keyword.fetch!(opts, :id))
   end
 
   defp process_new_state({instructions, elevator}, state) do
@@ -70,14 +70,14 @@ defmodule Skyscraper.Elevator.Server do
   end
 
   defp run_instruction(:notify_new_destination, _elevator, state) do
-    :ok = Dispatcher.notify_new_destination(state.dispatcher, state.id)
+    :ok = Dispatcher.notify_new_destination(state.building, state.id)
   end
 
   defp display(state) do
     Task.Supervisor.start_child(Skyscraper.TaskSupervisor, fn ->
-      Display.change_elevator_state(
-        state.callback_mod,
-        state.dispatcher,
+      Interface.change_elevator_state(
+        state.interface_mod,
+        state.building,
         state.id,
         state.elevator
       )

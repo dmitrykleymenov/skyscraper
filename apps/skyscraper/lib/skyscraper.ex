@@ -1,6 +1,7 @@
 defmodule Skyscraper do
   alias Skyscraper.Elevator.Server, as: Elevator
-  alias Skyscraper.{BuildingsSupervisor, BuildingSupervisor, ConsoleDisplay}
+  alias Skyscraper.Interface.Console
+  alias Skyscraper.{BuildingsSupervisor, BuildingSupervisor}
 
   @moduledoc """
   Skyscraper keeps the contexts that define your domain
@@ -14,10 +15,10 @@ defmodule Skyscraper do
     name = Keyword.fetch!(arg, :name)
 
     args = [
-      dispatcher_id: name,
+      building: name,
       floors: Keyword.fetch!(arg, :floors_amount) |> floors(),
       elevator_ids: Keyword.fetch!(arg, :elevators_quantity) |> elevator_ids(),
-      callback_mod: Keyword.get(arg, :callback_mod, ConsoleDisplay)
+      interface_mod: Keyword.get(arg, :interface_mod, Console)
     ]
 
     DynamicSupervisor.start_child(
@@ -26,8 +27,8 @@ defmodule Skyscraper do
     )
   end
 
-  def push_elevator_button(skyscraper, elevator_id, floor) do
-    Elevator.push_button(skyscraper, elevator_id, floor)
+  def push_elevator_button(building, elevator_id, floor) do
+    Elevator.push_button(building, elevator_id, floor)
   end
 
   defp floors(floors_amount) do

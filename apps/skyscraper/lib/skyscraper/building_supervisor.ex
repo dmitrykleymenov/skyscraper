@@ -1,6 +1,6 @@
 defmodule Skyscraper.BuildingSupervisor do
   use Supervisor
-  alias Skyscraper.Dispatcher.Server, as: Dispather
+  alias Skyscraper.Dispatcher.Server, as: Dispatcher
   alias Skyscraper.Elevator.Server, as: Elevator
 
   def start_link(arg) do
@@ -22,13 +22,7 @@ defmodule Skyscraper.BuildingSupervisor do
       |> Keyword.fetch!(:elevator_ids)
       |> Enum.map(fn id ->
         Supervisor.child_spec(
-          {Elevator,
-           [
-             dispatcher: Keyword.fetch!(arg, :dispatcher_id),
-             id: id,
-             floors: Keyword.fetch!(arg, :floors),
-             callback_mod: Keyword.fetch!(arg, :callback_mod)
-           ]},
+          {Elevator, Keyword.put(arg, :id, id)},
           id: id
         )
       end)
