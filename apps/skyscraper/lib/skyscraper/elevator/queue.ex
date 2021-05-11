@@ -18,13 +18,19 @@ defmodule Skyscraper.Elevator.Queue do
   """
 
   def push(%Queue{up_queue: up_queue} = queue, {floor, :up}) do
-    queue
-    |> Map.put(:up_queue, Prioqueue.insert(up_queue, floor))
+    if up_queue |> Prioqueue.member?(floor) do
+      queue
+    else
+      queue |> Map.put(:up_queue, Prioqueue.insert(up_queue, floor))
+    end
   end
 
   def push(%Queue{down_queue: down_queue} = queue, {floor, :down}) do
-    queue
-    |> Map.put(:down_queue, Prioqueue.insert(down_queue, floor))
+    if down_queue |> Prioqueue.member?(floor) do
+      queue
+    else
+      queue |> Map.put(:down_queue, Prioqueue.insert(down_queue, floor))
+    end
   end
 
   @doc """
