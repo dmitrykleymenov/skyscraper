@@ -57,12 +57,12 @@ defmodule Skyscraper.Elevator.Server do
 
   @impl GenServer
   def handle_call({:propose, buttons}, _caller, %{elevator: elevator} = state) do
-    new_elevator = elevator |> Elevator.propose(buttons)
+    case elevator |> Elevator.propose(buttons) do
+      :ignored ->
+        {:reply, nil, state}
 
-    if new_elevator == elevator do
-      {:reply, nil, state}
-    else
-      {:reply, new_elevator.destination, %{state | elevator: new_elevator}}
+      {:accepted, destination_info, elevator} ->
+        {:reply, destination_info, %{state | elevator: elevator}}
     end
   end
 

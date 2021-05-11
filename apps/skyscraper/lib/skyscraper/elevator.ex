@@ -101,7 +101,7 @@ defmodule Skyscraper.Elevator do
   end
 
   @doc """
-    Answers if elevator can handle moving request
+    Answers if `elevator` can handle moving request
   """
   def can_handle?(%Elevator{destination: nil} = elevator, {floor, _moving_choice}) do
     floor in elevator.acceptable_floors
@@ -137,31 +137,44 @@ defmodule Skyscraper.Elevator do
 
   def can_handle?(elevator, {floor, _moving_choice}), do: floor in elevator.acceptable_floors
 
+  @doc """
+    Proposes `elevator` to change destination to one from `buttons` list
+  """
   def propose(%Elevator{} = elevator, buttons) do
-    buttons
-    |> Enum.reduce(elevator, fn {button, time}, el ->
-      if el |> can_handle?(button) &&
-           (is_nil(time) || el |> additional_handling_time(button) < time) do
-        el |> inject_destination(button, true)
-      else
-        el
-      end
-    end)
+    new_elevator =
+      buttons
+      |> Enum.reduce(elevator, fn {button, time}, el ->
+        if el |> can_handle?(button) &&
+             (is_nil(time) ||
+                el |> inject_destination(button, true) |> destination_reach_time() < time) do
+          el |> inject_destination(button, true)
+        else
+          el
+        end
+      end)
+
+    if new_elevator == elevator do
+      :ignored
+    else
+      {:accepted, new_elevator |> destination_reach_time(), new_elevator}
+    end
+  end
+
+  def destination_reach_time(elevator) do
+    calc_dest_reach_time(elevator, elevator.destination, 0)
+  end
+
+  defp calc_dest_reach_time(%{current_floor: floor}, {floor, _} = dest, time), do: {dest, time}
+
+  defp calc_dest_reach_time(elevator, dest, time) do
+    calc_dest_reach_time(elevator |> process(), dest, Elevator.step_duration(elevator) + time)
   end
 
   defp actualize_destination_time_notification(%{outer_request: nil} = elevator), do: elevator
 
   defp actualize_destination_time_notification(elevator) do
     elevator
-    |> add_instruction(
-      {:send_time_to_destination, elevator |> destination_reach_time(elevator.destination, 0)}
-    )
-  end
-
-  defp destination_reach_time(%{current_floor: floor}, {floor, _} = dest, time), do: {dest, time}
-
-  defp destination_reach_time(elevator, dest, time) do
-    destination_reach_time(elevator |> process(), dest, Elevator.step_duration(elevator) + time)
+    |> add_instruction({:send_time_to_destination, elevator |> destination_reach_time()})
   end
 
   defp inject_destination(elevator, new_dest, outer_request \\ nil)
