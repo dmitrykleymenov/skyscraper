@@ -160,7 +160,7 @@ defmodule Skyscraper.Elevator do
     end
   end
 
-  def destination_reach_time(elevator) do
+  defp destination_reach_time(elevator) do
     calc_dest_reach_time(elevator, elevator.destination, 0)
   end
 
