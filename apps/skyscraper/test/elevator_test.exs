@@ -421,7 +421,7 @@ defmodule Skyscraper.ElevatorTest do
          %{
            elevator: elevator
          } do
-      {instructions, elevator} = elevator |> Elevator.complete_step()
+      {instructions, _elevator} = elevator |> Elevator.complete_step()
 
       assert {:send_time_to_destination, {{6, :down}, 20110}} in instructions
     end
@@ -600,6 +600,36 @@ defmodule Skyscraper.ElevatorTest do
          ]
     test "returns only delta for handling times", %{elevator: elevator} do
       assert elevator |> Elevator.additional_handling_time({8, :down}) == 111
+    end
+  end
+
+  describe(".propose/2") do
+    @tag additionals: [destination: {7, :up}, step: :moving, direction: :up]
+    test "ignores destinations when can't handle any of them", %{elevator: elevator} do
+      assert elevator |> Elevator.propose([{{5, :down}, nil}, {{1, :up}, nil}]) == :ignored
+    end
+
+    @tag additionals: [destination: {7, :up}, step: :moving, direction: :up]
+    test "accepts a destination when can handle it", %{elevator: elevator} do
+      assert {:accepted, {{5, :up}, 4000}, %Elevator{}} =
+               elevator |> Elevator.propose([{{5, :up}, nil}])
+    end
+
+    @tag additionals: [destination: {7, :up}, step: :moving, direction: :up]
+    test "ignores destination if handling time more than given", %{elevator: elevator} do
+      assert elevator |> Elevator.propose([{{5, :up}, 3000}]) == :ignored
+    end
+
+    @tag additionals: [destination: {7, :up}, step: :moving, direction: :up]
+    test "takes destination which can handle and ignores other", %{elevator: elevator} do
+      assert {:accepted, {{5, :up}, 4000}, %Elevator{}} =
+               elevator |> Elevator.propose([{{1, :up}, nil}, {{5, :up}, nil}, {{9, :up}, nil}])
+    end
+
+    @tag additionals: [destination: {7, :up}, step: :moving, direction: :up]
+    test "takes last destination can handle", %{elevator: elevator} do
+      assert {:accepted, {{2, :up}, 1000}, %Elevator{}} =
+               elevator |> Elevator.propose([{{5, :up}, nil}, {{2, :up}, nil}, {{9, :up}, nil}])
     end
   end
 end
