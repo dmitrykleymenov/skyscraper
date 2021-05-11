@@ -11,12 +11,16 @@ defmodule Skyscraper.Elevator.Server do
   @doc """
    Handles inside cabin button push
   """
-  def push_button(dispatcher_id, elevator_id, floor) do
-    GenServer.cast(name(dispatcher_id, elevator_id), {:push_elevator_button, floor})
+  def push_button(building, id, button) do
+    GenServer.cast(name(building, id), {:push_elevator_button, button})
   end
 
-  def get_handle_time(dispatcher_id, elevator_id, floor) do
-    GenServer.call(name(dispatcher_id, elevator_id), {:get_handle_time, floor})
+  def get_handle_time(building, id, button) do
+    GenServer.call(name(building, id), {:get_handle_time, button})
+  end
+
+  def propose(building, id, buttons) do
+    GenServer.call(name(building, id), {:propose, buttons})
   end
 
   @impl GenServer
@@ -33,8 +37,8 @@ defmodule Skyscraper.Elevator.Server do
   end
 
   @impl GenServer
-  def handle_cast({:push_elevator_button, floor}, %{elevator: elevator} = state) do
-    {:noreply, elevator |> Elevator.push_button(floor) |> process_new_state(state) |> display()}
+  def handle_cast({:push_elevator_button, button}, %{elevator: elevator} = state) do
+    {:noreply, elevator |> Elevator.push_button(button) |> process_new_state(state) |> display()}
   end
 
   @impl GenServer
@@ -49,6 +53,17 @@ defmodule Skyscraper.Elevator.Server do
         do: Elevator.additional_handling_time(elevator, button)
 
     {:reply, reply, state}
+  end
+
+  @impl GenServer
+  def handle_call({:propose, buttons}, _caller, %{elevator: elevator} = state) do
+    new_elevator = elevator |> Elevator.propose(buttons)
+
+    if new_elevator == elevator do
+      {:reply, nil, state}
+    else
+      {:reply, new_elevator.destination, %{state | elevator: new_elevator}}
+    end
   end
 
   def name(building, id) do
@@ -74,10 +89,10 @@ defmodule Skyscraper.Elevator.Server do
   end
 
   defp display(state) do
-    Enum.each(state.interface_mods, fn interface_mod ->
+    Enum.each(state.interface_mods, fn interface_module ->
       Task.Supervisor.start_child(Skyscraper.TaskSupervisor, fn ->
         Interface.change_elevator_state(
-          interface_mod,
+          interface_module,
           state.building,
           state.id,
           state.elevator

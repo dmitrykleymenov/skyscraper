@@ -8,6 +8,7 @@ defmodule Skyscraper.Elevator do
     :acceptable_floors,
     :current_floor,
     :destination,
+    :outer_request,
     :step_durations,
     :direction,
     step: :idling,
@@ -71,6 +72,7 @@ defmodule Skyscraper.Elevator do
     Returns floors which elevator must visit
   """
   def floors_to_handle(%Elevator{destination: nil}), do: []
+  def floors_to_handle(%Elevator{queue: queue, outer_request: true}), do: Queue.list(queue)
 
   def floors_to_handle(%Elevator{destination: destination, queue: queue}) do
     [elem(destination, 0) | Queue.list(queue)]
@@ -94,7 +96,7 @@ defmodule Skyscraper.Elevator do
   """
 
   def additional_handling_time(%Elevator{} = elevator, new_dest) do
-    processing_time(elevator |> inject_destination(new_dest)) - processing_time(elevator)
+    processing_time(elevator |> inject_destination(new_dest, true)) - processing_time(elevator)
   end
 
   @doc """
@@ -134,21 +136,39 @@ defmodule Skyscraper.Elevator do
 
   def can_handle?(elevator, {floor, _moving_choice}), do: floor in elevator.acceptable_floors
 
-  defp inject_destination(elevator, new_dest) do
+  def propose(%Elevator{} = elevator, buttons) do
+    buttons
+    |> Enum.reduce(elevator, fn
+      {button, time}, el ->
+        if el |> can_handle?(button) &&
+             (is_nil(time) || el |> additional_handling_time(button) < time),
+           do: el |> inject_destination(button, true)
+    end)
+  end
+
+  defp inject_destination(elevator, new_dest, outer_request \\ nil)
+
+  defp inject_destination(%{outer_request: true} = elevator, new_dest, outer_request) do
+    elevator
+    |> Map.put(:destination, new_dest)
+    |> Map.put(:outer_request, outer_request)
+  end
+
+  defp inject_destination(elevator, new_dest, outer_request) do
     elevator
     |> Map.put(:queue, Queue.push(elevator.queue, elevator.destination))
     |> Map.put(:destination, new_dest)
+    |> Map.put(:outer_request, outer_request)
   end
 
   defp processing_time(%Elevator{step: :idling}), do: 0
 
   defp processing_time(elevator) do
-    elevator = elevator |> process()
-    (elevator |> step_duration()) + processing_time(elevator)
+    (elevator |> step_duration()) + processing_time(elevator |> process())
   end
 
   defp determine_moving_choice(floor, %Elevator{current_floor: curr}) when floor > curr, do: :up
-  defp determine_moving_choice(floor, %Elevator{current_floor: cur}) when floor < cur, do: :down
+  defp determine_moving_choice(floor, %Elevator{current_floor: curr}) when floor < curr, do: :down
   defp determine_moving_choice(_floor, %Elevator{destination: nil}), do: :down
   defp determine_moving_choice(_floor, %Elevator{step: :moving, direction: :up}), do: :down
   defp determine_moving_choice(_floor, %Elevator{step: :moving, direction: :down}), do: :up
@@ -160,6 +180,12 @@ defmodule Skyscraper.Elevator do
   defp accept_destination({:idling, _dest, _curr, floor}, elevator) do
     elevator |> Map.put(:destination, floor) |> check_destination()
   end
+
+  defp accept_destination(
+         {_step, {dest, _choice1}, _curr, {dest, moving_choice}},
+         %{outer_request: true} = elevator
+       ),
+       do: elevator |> Map.put(:queue, elevator.queue |> Queue.push({dest, moving_choice}))
 
   defp accept_destination({_step, {dest, _choice1}, _curr, {dest, _choice2}}, elevator),
     do: elevator
@@ -236,10 +262,17 @@ defmodule Skyscraper.Elevator do
   defp check_destination(
          %Elevator{destination: {floor, moving_choice}, current_floor: floor} = elevator
        ) do
-    {dest, queue} = elevator.queue |> Queue.pop(moving_choice)
+    {dest, queue} =
+      case elevator.queue |> Queue.pop(moving_choice) do
+        {{^floor, choice}, queue} when elevator.outer_request ->
+          queue |> Queue.pop(choice)
+
+        res ->
+          res
+      end
 
     elevator
-    |> Map.merge(%{destination: dest, queue: queue})
+    |> Map.merge(%{destination: dest, queue: queue, outer_request: nil})
     |> set_step(:opening_doors)
   end
 
@@ -277,11 +310,11 @@ defmodule Skyscraper.Elevator do
     |> add_instruction(:reserve_step_time)
   end
 
-  defp extract_instructions(%Elevator{instructions: instructions} = elevator) do
-    {instructions |> Enum.reverse(), %{elevator | instructions: []}}
-  end
-
   defp add_instruction(elevator, instruction) do
     elevator |> Map.put(:instructions, [instruction | elevator.instructions])
+  end
+
+  defp extract_instructions(%Elevator{instructions: instructions} = elevator) do
+    {instructions |> Enum.reverse(), %{elevator | instructions: []}}
   end
 end
