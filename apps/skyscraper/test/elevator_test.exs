@@ -40,6 +40,16 @@ defmodule Skyscraper.ElevatorTest do
     assert elevator |> Elevator.floors_to_handle() |> Enum.sort() == [4, 5, 6]
   end
 
+  @tag additionals: [
+         destination: {5, :up},
+         outer_request: true,
+         queue: Queue.build() |> Queue.push({6, :up}) |> Queue.push({4, :down})
+       ]
+
+  test "returns all floors to handle except outers", %{elevator: elevator} do
+    assert elevator |> Elevator.floors_to_handle() |> Enum.sort() == [4, 6]
+  end
+
   @tag additionals: [current_floor: 5]
   test "returns current floor", %{elevator: elevator} do
     assert elevator |> Elevator.current_floor() == 5
@@ -93,6 +103,16 @@ defmodule Skyscraper.ElevatorTest do
       assert instructions == [:reserve_step_time]
     end
 
+    @tag additionals: [destination: {6, :up}, outer_request: true, step: :moving, direction: :up]
+    test "add floor to query if floor is equal destination, but destination is outer request",
+         %{elevator: elevator} do
+      assert elevator |> Elevator.floors_to_handle() |> Enum.empty?()
+      {instructions, elevator} = elevator |> Elevator.push_button(6)
+
+      assert elevator |> Elevator.floors_to_handle() == [6]
+      assert instructions |> Enum.empty?()
+    end
+
     @tag additionals: [destination: {6, :up}, step: :moving, direction: :up]
     test "ignores the command when new floor request is destination floor and elevator isn't idling",
          %{elevator: elevator} do
@@ -134,6 +154,20 @@ defmodule Skyscraper.ElevatorTest do
       assert instructions |> Enum.empty?()
     end
 
+    @tag additionals: [step: :moving, direction: :up, destination: {5, :up}, outer_request: true]
+    test "sets the destination and discards the old one when outer request request is between current floor and destination",
+         %{elevator: elevator} do
+      assert elevator |> Elevator.current_floor() == 1
+      assert elevator.outer_request
+      assert elevator |> Elevator.floors_to_handle() == []
+      {instructions, elevator} = elevator |> Elevator.push_button(3)
+
+      assert elevator |> Elevator.floors_to_handle() == [3]
+      refute elevator.outer_request
+      assert elevator |> Elevator.step() == :moving_up
+      assert instructions == [:notify_new_destination]
+    end
+
     @tag additionals: [step: :moving, direction: :up, destination: {5, :up}]
     test "changes the destination and puts the old one to queue when request is between current floor and destination",
          %{elevator: elevator} do
@@ -171,6 +205,25 @@ defmodule Skyscraper.ElevatorTest do
       {instructions, elevator} = elevator |> Elevator.push_button(6)
 
       assert elevator |> Elevator.floors_to_handle() == [6, 7]
+      assert elevator |> Elevator.step() == :moving_down
+      assert instructions == [:notify_new_destination]
+    end
+
+    @tag additionals: [
+           step: :moving,
+           direction: :down,
+           destination: {7, :up},
+           current_floor: 9,
+           outer_request: true
+         ]
+    test "prioritizes down direction requests when descending and outer request", %{
+      elevator: elevator
+    } do
+      assert elevator |> Elevator.floors_to_handle() == []
+
+      {instructions, elevator} = elevator |> Elevator.push_button(6)
+
+      assert elevator |> Elevator.floors_to_handle() == [6]
       assert elevator |> Elevator.step() == :moving_down
       assert instructions == [:notify_new_destination]
     end
@@ -337,6 +390,50 @@ defmodule Skyscraper.ElevatorTest do
       assert instructions == [:reserve_step_time]
     end
 
+    @tag additionals: [
+           step: :moving,
+           direction: :up,
+           destination: {2, :up},
+           outer_request: true,
+           queue: Queue.build() |> Queue.push({2, :up})
+         ]
+    test "ignores the same floor destination from queue when reached outer request",
+         %{
+           elevator: elevator
+         } do
+      assert elevator |> Elevator.floors_to_handle() == [2]
+
+      {instructions, elevator} = elevator |> Elevator.complete_step()
+
+      assert elevator |> Elevator.current_floor() == 2
+      assert elevator |> Elevator.step() == :opening_doors
+      assert elevator |> Elevator.floors_to_handle() == []
+      assert instructions == [:reserve_step_time]
+      refute elevator.outer_request
+    end
+
+    @tag additionals: [
+           step: :moving,
+           direction: :up,
+           destination: {2, :up},
+           outer_request: true,
+           queue: Queue.build() |> Queue.push({3, :up})
+         ]
+    test "takes next destination from queue when reached outer request and current floor doesn't equal new destination",
+         %{
+           elevator: elevator
+         } do
+      assert elevator |> Elevator.floors_to_handle() == [3]
+
+      {instructions, elevator} = elevator |> Elevator.complete_step()
+
+      assert elevator |> Elevator.current_floor() == 2
+      assert elevator |> Elevator.step() == :opening_doors
+      assert elevator |> Elevator.floors_to_handle() == [3]
+      assert instructions == [:reserve_step_time]
+      refute elevator.outer_request
+    end
+
     @tag additionals: [step: :closing_doors, destination: nil]
     test "becomes idle when there are no more destinations on closing doors", %{
       elevator: elevator
@@ -443,6 +540,20 @@ defmodule Skyscraper.ElevatorTest do
            elevator: elevator
          } do
       assert elevator |> Elevator.additional_handling_time({7, :down}) == 22111
+    end
+
+    @tag additionals: [
+           destination: {7, :down},
+           current_floor: 10,
+           step: :moving,
+           direction: :down,
+           queue: Queue.build() |> Queue.push({5, :down}) |> Queue.push({6, :down})
+         ]
+    test "returns only delta for handling times",
+         %{
+           elevator: elevator
+         } do
+      assert elevator |> Elevator.additional_handling_time({8, :down}) == 111
     end
   end
 end
