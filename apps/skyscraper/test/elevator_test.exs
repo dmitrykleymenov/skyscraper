@@ -377,6 +377,55 @@ defmodule Skyscraper.ElevatorTest do
       assert instructions == [:reserve_step_time]
     end
 
+    @tag additionals: [
+           step: :moving,
+           direction: :down,
+           destination: {6, :down},
+           current_floor: 8,
+           outer_request: true,
+           step_durations: %{
+             opening_doors: 1,
+             doors_open: 10,
+             closing_doors: 100,
+             moving_up: 1000,
+             moving_down: 10000
+           }
+         ]
+    test "descends one floor, keeps moving down and sends destination reach time when destination isn't reached and request is outer",
+         %{
+           elevator: elevator
+         } do
+      {instructions, elevator} = elevator |> Elevator.complete_step()
+
+      assert elevator |> Elevator.current_floor() == 7
+      assert elevator |> Elevator.step() == :moving_down
+      assert :reserve_step_time in instructions
+      assert {:send_time_to_destination, {{6, :down}, 10000}} in instructions
+    end
+
+    @tag additionals: [
+           step: :opening_doors,
+           direction: :up,
+           destination: {6, :down},
+           current_floor: 8,
+           outer_request: true,
+           step_durations: %{
+             opening_doors: 1,
+             doors_open: 10,
+             closing_doors: 100,
+             moving_up: 1000,
+             moving_down: 10000
+           }
+         ]
+    test "sends destination reach time when opening doors and request is outer",
+         %{
+           elevator: elevator
+         } do
+      {instructions, elevator} = elevator |> Elevator.complete_step()
+
+      assert {:send_time_to_destination, {{6, :down}, 20110}} in instructions
+    end
+
     @tag additionals: [step: :moving, direction: :down, destination: {2, :down}, current_floor: 3]
     test "descends one floor and starts to open doors when destination is reached by moving down",
          %{elevator: elevator} do
@@ -549,10 +598,7 @@ defmodule Skyscraper.ElevatorTest do
            direction: :down,
            queue: Queue.build() |> Queue.push({5, :down}) |> Queue.push({6, :down})
          ]
-    test "returns only delta for handling times",
-         %{
-           elevator: elevator
-         } do
+    test "returns only delta for handling times", %{elevator: elevator} do
       assert elevator |> Elevator.additional_handling_time({8, :down}) == 111
     end
   end
