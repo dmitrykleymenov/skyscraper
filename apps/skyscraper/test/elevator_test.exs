@@ -559,6 +559,14 @@ defmodule Skyscraper.ElevatorTest do
       %{elevator: elevator}
     end
 
+    @tag additionals: [current_floor: 2, step: :idling]
+    test "returns zero when destination is empty",
+         %{
+           elevator: elevator
+         } do
+      assert elevator |> Elevator.additional_handling_time({4, :up}) == 0
+    end
+
     @tag additionals: [destination: {6, :up}, current_floor: 2, step: :moving, direction: :up]
     test "returns only doors status changing time when request direction is up and destination on the way",
          %{
@@ -604,32 +612,62 @@ defmodule Skyscraper.ElevatorTest do
   end
 
   describe(".propose/2") do
+    test "accepts any destination when idling", %{elevator: elevator} do
+      {instructions, new_elevator} = elevator |> Elevator.propose([{{5, :up}, nil}])
+
+      assert new_elevator.destination == {5, :up}
+      assert new_elevator.outer_request
+      assert {:send_time_to_destination, {{5, :up}, 4000}} in instructions
+      assert :reserve_step_time in instructions
+    end
+
+    @tag additionals: [step: :doors_open]
+    test "accepts any destination when destination is empty", %{elevator: elevator} do
+      {instructions, new_elevator} = elevator |> Elevator.propose([{{5, :up}, nil}])
+
+      assert new_elevator.destination == {5, :up}
+      assert new_elevator.outer_request
+      assert instructions == [{:send_time_to_destination, {{5, :up}, 6000}}]
+    end
+
     @tag additionals: [destination: {7, :up}, step: :moving, direction: :up]
     test "ignores destinations when can't handle any of them", %{elevator: elevator} do
-      assert elevator |> Elevator.propose([{{5, :down}, nil}, {{1, :up}, nil}]) == :ignored
+      assert {[], elevator} == elevator |> Elevator.propose([{{5, :down}, nil}, {{1, :up}, nil}])
     end
 
     @tag additionals: [destination: {7, :up}, step: :moving, direction: :up]
     test "accepts a destination when can handle it", %{elevator: elevator} do
-      assert {:accepted, {{5, :up}, 4000}, %Elevator{}} =
-               elevator |> Elevator.propose([{{5, :up}, nil}])
+      {instructions, _elevator} = elevator |> Elevator.propose([{{5, :up}, nil}])
+
+      assert instructions == [{:send_time_to_destination, {{5, :up}, 4000}}]
     end
 
     @tag additionals: [destination: {7, :up}, step: :moving, direction: :up]
-    test "ignores destination if handling time more than given", %{elevator: elevator} do
-      assert elevator |> Elevator.propose([{{5, :up}, 3000}]) == :ignored
+    test "ignores destination when handling time more than given", %{elevator: elevator} do
+      assert {[], elevator} == elevator |> Elevator.propose([{{5, :up}, 3000}])
+    end
+
+    @tag additionals: [destination: {7, :up}, step: :moving, direction: :up]
+    test "takes destination when handling time less than given", %{elevator: elevator} do
+      {instructions, _elevator} = elevator |> Elevator.propose([{{5, :up}, 7000}])
+
+      assert instructions == [{:send_time_to_destination, {{5, :up}, 4000}}]
     end
 
     @tag additionals: [destination: {7, :up}, step: :moving, direction: :up]
     test "takes destination which can handle and ignores other", %{elevator: elevator} do
-      assert {:accepted, {{5, :up}, 4000}, %Elevator{}} =
-               elevator |> Elevator.propose([{{1, :up}, nil}, {{5, :up}, nil}, {{9, :up}, nil}])
+      {instructions, _elevator} =
+        elevator |> Elevator.propose([{{1, :up}, nil}, {{5, :up}, nil}, {{9, :up}, nil}])
+
+      assert instructions == [{:send_time_to_destination, {{5, :up}, 4000}}]
     end
 
     @tag additionals: [destination: {7, :up}, step: :moving, direction: :up]
     test "takes last destination can handle", %{elevator: elevator} do
-      assert {:accepted, {{2, :up}, 1000}, %Elevator{}} =
-               elevator |> Elevator.propose([{{5, :up}, nil}, {{2, :up}, nil}, {{9, :up}, nil}])
+      {instructions, _elevator} =
+        elevator |> Elevator.propose([{{5, :up}, nil}, {{2, :up}, nil}, {{9, :up}, nil}])
+
+      assert instructions == [{:send_time_to_destination, {{2, :up}, 1000}}]
     end
   end
 end

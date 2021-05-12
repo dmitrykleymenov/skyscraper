@@ -2,6 +2,7 @@ defmodule Skyscraper.Elevator do
   alias __MODULE__
   alias Skyscraper.Elevator.Queue
   @default_step_duration 1000
+  require IEx
 
   defstruct [
     :queue,
@@ -93,8 +94,10 @@ defmodule Skyscraper.Elevator do
   def current_floor(%Elevator{current_floor: current_floor}), do: current_floor
 
   @doc """
-    Calculates delta of handling current destination directly from handling current destination through new request
+    Calculates delta of handling current destination directly from handling current destination through `new_dest` for `elevator`
   """
+
+  def additional_handling_time(%Elevator{destination: nil}, _new_dest), do: 0
 
   def additional_handling_time(%Elevator{} = elevator, new_dest) do
     processing_time(elevator |> inject_destination(new_dest, true)) - processing_time(elevator)
@@ -140,24 +143,21 @@ defmodule Skyscraper.Elevator do
   @doc """
     Proposes `elevator` to change destination to one from `buttons` list
   """
-  def propose(%Elevator{} = elevator, buttons) do
-    new_elevator =
-      buttons
-      |> Enum.reduce(elevator, fn {button, time}, el ->
-        if el |> can_handle?(button) &&
-             (is_nil(time) ||
-                el |> inject_destination(button, true) |> destination_reach_time() < time) do
-          el |> inject_destination(button, true)
-        else
-          el
-        end
-      end)
 
-    if new_elevator == elevator do
-      :ignored
-    else
-      {:accepted, new_elevator |> destination_reach_time(), new_elevator}
-    end
+  def propose(%Elevator{} = elevator, buttons) do
+    buttons
+    |> Enum.reduce(elevator, fn {button, time}, el ->
+      if el |> can_handle?(button) &&
+           (is_nil(time) ||
+              el |> inject_destination(button, true) |> destination_reach_time() |> elem(1) <
+                time) do
+        el |> inject_destination(button, true)
+      else
+        el
+      end
+    end)
+    |> actualize_destination_time_notification()
+    |> extract_instructions()
   end
 
   defp destination_reach_time(elevator) do
@@ -183,6 +183,13 @@ defmodule Skyscraper.Elevator do
     elevator
     |> Map.put(:destination, new_dest)
     |> Map.put(:outer_request, outer_request)
+  end
+
+  defp inject_destination(%{step: :idling} = elevator, new_dest, outer_request) do
+    elevator
+    |> Map.put(:destination, new_dest)
+    |> Map.put(:outer_request, outer_request)
+    |> check_destination()
   end
 
   defp inject_destination(elevator, new_dest, outer_request) do
