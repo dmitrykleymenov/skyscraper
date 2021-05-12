@@ -76,7 +76,7 @@ defmodule Skyscraper.Elevator.Server do
     {:ok, _} = elevator |> Elevator.step_duration() |> :timer.send_after(:step_completed)
   end
 
-  defp run_instruction({:send_time_to_destination, dest_info}, _elevator, state) do
+  defp run_instruction({:send_time_for_destination, dest_info}, _elevator, state) do
     :ok = Dispatcher.set_time_to_destination(state.building, state.id, dest_info)
   end
 

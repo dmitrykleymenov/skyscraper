@@ -55,6 +55,7 @@ defmodule Skyscraper.Dispatcher do
   defp add_proposal_instruction(dispatcher, nil, _buttons), do: dispatcher
 
   defp add_proposal_instruction(dispatcher, el_id, buttons) do
+    # IEx.pry()
     active = for {_id, button} <- dispatcher.elevators, button, into: %{}, do: button
 
     dispatcher
