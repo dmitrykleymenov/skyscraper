@@ -10,20 +10,32 @@ defmodule Skyscraper.Interface.Console do
   end
 
   @impl Interface
-  def dispatcher_state_changed({}) do
-    :ok
+  def dispatcher_state_changed(dispatcher) do
+    dispatcher
+    |> format_dispatcher_status()
+    |> IO.puts()
   end
 
   defp format_elevator_status(elevator) do
     "Elevator ##{elevator.elevator_id} from #{elevator.building} currently on the #{
       elevator.current_floor
-    } floor and #{elevator.status}. #{elevator.floor_buttons |> show_buttons()}"
+    } floor and #{elevator.status}. #{elevator.floor_buttons |> show_elevator_buttons()}"
   end
 
-  defp show_buttons(buttons), do: buttons |> filter_active() |> display_floors()
+  defp format_dispatcher_status(dispatcher) do
+    "In #{dispatcher.building} #{dispatcher.buttons |> show_dispatcher_buttons()}"
+  end
 
-  defp filter_active(buttons), do: for({floor, active} <- buttons, active, do: floor)
+  defp show_elevator_buttons(buttons) do
+    for({floor, active} <- buttons, active, do: floor)
+    |> display_buttons()
+  end
 
-  defp display_floors([]), do: "No active buttons"
-  defp display_floors(floors), do: "Active buttons: #{floors |> Enum.join(", ")}"
+  defp show_dispatcher_buttons(buttons) do
+    for({{floor, direction}, active} <- buttons, active, do: "#{floor}-#{direction}")
+    |> display_buttons
+  end
+
+  defp display_buttons([]), do: "No active buttons"
+  defp display_buttons(floors), do: "Active buttons: #{floors |> Enum.join(", ")}"
 end

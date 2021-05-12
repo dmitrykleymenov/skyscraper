@@ -17,6 +17,8 @@ defmodule Skyscraper.Elevator.Queue do
     Pushes a destination to queue dependend of direction
   """
 
+  def push(%Queue{} = queue, nil), do: queue
+
   def push(%Queue{up_queue: up_queue} = queue, {floor, :up}) do
     if up_queue |> Prioqueue.member?(floor) do
       queue

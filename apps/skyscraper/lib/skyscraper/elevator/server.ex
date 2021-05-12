@@ -20,16 +20,14 @@ defmodule Skyscraper.Elevator.Server do
   end
 
   def propose(building, id, buttons) do
-    GenServer.call(name(building, id), {:propose, buttons})
+    GenServer.cast(name(building, id), {:propose, buttons})
   end
 
   @impl GenServer
   def init(opts) do
-    elevator = Elevator.build(opts)
-
     {:ok,
      %{
-       elevator: elevator,
+       elevator: Elevator.build(opts),
        building: Keyword.fetch!(opts, :building),
        id: Keyword.fetch!(opts, :id),
        interface_mods: Keyword.fetch!(opts, :interface_mods)
@@ -39,6 +37,11 @@ defmodule Skyscraper.Elevator.Server do
   @impl GenServer
   def handle_cast({:push_elevator_button, button}, %{elevator: elevator} = state) do
     {:noreply, elevator |> Elevator.push_button(button) |> process_new_state(state) |> display()}
+  end
+
+  @impl GenServer
+  def handle_cast({:propose, buttons}, %{elevator: elevator} = state) do
+    {:noreply, elevator |> Elevator.propose(buttons) |> process_new_state(state)}
   end
 
   @impl GenServer
@@ -53,17 +56,6 @@ defmodule Skyscraper.Elevator.Server do
         do: Elevator.additional_handling_time(elevator, button)
 
     {:reply, reply, state}
-  end
-
-  @impl GenServer
-  def handle_call({:propose, buttons}, _caller, %{elevator: elevator} = state) do
-    case elevator |> Elevator.propose(buttons) do
-      :ignored ->
-        {:reply, nil, state}
-
-      {:accepted, destination_info, elevator} ->
-        {:reply, destination_info, %{state | elevator: elevator}}
-    end
   end
 
   def name(building, id) do
@@ -82,6 +74,10 @@ defmodule Skyscraper.Elevator.Server do
 
   defp run_instruction(:reserve_step_time, elevator, _state) do
     {:ok, _} = elevator |> Elevator.step_duration() |> :timer.send_after(:step_completed)
+  end
+
+  defp run_instruction({:send_time_to_destination, dest_info}, _elevator, state) do
+    :ok = Dispatcher.set_time_to_destination(state.building, state.id, dest_info)
   end
 
   defp run_instruction(:notify_new_destination, _elevator, state) do

@@ -3,7 +3,7 @@ defmodule Skyscraper.Interface do
   alias Skyscraper.Dispatcher.Display, as: Dispatcher
 
   @callback elevator_state_changed(Elevator.t()) :: :ok
-  @callback dispatcher_state_changed({}) :: :ok
+  @callback dispatcher_state_changed(Dispatcher.t()) :: :ok
 
   def change_elevator_state(interface_mods, building, id, car) do
     apply(interface_mods, :elevator_state_changed, [Elevator.build(building, id, car)])
