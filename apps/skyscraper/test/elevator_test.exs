@@ -401,6 +401,7 @@ defmodule Skyscraper.ElevatorTest do
       assert elevator |> Elevator.step() == :moving_down
       assert :reserve_step_time in instructions
       assert {:send_time_for_destination, {{6, :down}, 111}} in instructions
+      assert instructions |> Enum.count() == 2
     end
 
     @tag additionals: [
@@ -457,7 +458,9 @@ defmodule Skyscraper.ElevatorTest do
       assert elevator |> Elevator.current_floor() == 2
       assert elevator |> Elevator.step() == :opening_doors
       assert elevator |> Elevator.floors_to_handle() == []
-      assert instructions == [:reserve_step_time]
+      assert :reserve_step_time in instructions
+      assert {:destination_reached, {2, :up}} in instructions
+      assert instructions |> Enum.count() == 2
       refute elevator.outer_request
     end
 
@@ -479,7 +482,9 @@ defmodule Skyscraper.ElevatorTest do
       assert elevator |> Elevator.current_floor() == 2
       assert elevator |> Elevator.step() == :opening_doors
       assert elevator |> Elevator.floors_to_handle() == [3]
-      assert instructions == [:reserve_step_time]
+      assert instructions |> Enum.count() == 2
+      assert :reserve_step_time in instructions
+      assert {:destination_reached, {2, :up}} in instructions
       refute elevator.outer_request
     end
 
@@ -500,6 +505,7 @@ defmodule Skyscraper.ElevatorTest do
       assert elevator |> Elevator.step() == :moving_up
       assert :reserve_step_time in instructions
       assert :notify_new_destination in instructions
+      assert instructions |> Enum.count() == 2
     end
 
     @tag additionals: [step: :closing_doors, destination: {3, :up}, current_floor: 5]
@@ -511,6 +517,7 @@ defmodule Skyscraper.ElevatorTest do
       assert elevator |> Elevator.step() == :moving_down
       assert :reserve_step_time in instructions
       assert :notify_new_destination in instructions
+      assert instructions |> Enum.count() == 2
     end
 
     @tag additionals: [step: :closing_doors, destination: {3, :up}, current_floor: 3]
@@ -522,6 +529,7 @@ defmodule Skyscraper.ElevatorTest do
       assert elevator |> Elevator.step() == :opening_doors
       assert :reserve_step_time in instructions
       assert :notify_new_destination in instructions
+      assert instructions |> Enum.count() == 2
     end
 
     @tag additionals: [
@@ -619,6 +627,7 @@ defmodule Skyscraper.ElevatorTest do
       assert new_elevator.outer_request
       assert {:send_time_for_destination, {{5, :up}, 6000}} in instructions
       assert :reserve_step_time in instructions
+      assert instructions |> Enum.count() == 2
     end
 
     @tag additionals: [step: :doors_open]

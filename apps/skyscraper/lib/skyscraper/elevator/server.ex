@@ -84,6 +84,10 @@ defmodule Skyscraper.Elevator.Server do
     :ok = Dispatcher.notify_new_destination(state.building, state.id)
   end
 
+  defp run_instruction({:destination_reached, destination}, _elevator, state) do
+    :ok = Dispatcher.notify_destination_reached(state.building, state.id, destination)
+  end
+
   defp display(state) do
     Enum.each(state.interface_mods, fn interface_module ->
       Task.Supervisor.start_child(Skyscraper.TaskSupervisor, fn ->

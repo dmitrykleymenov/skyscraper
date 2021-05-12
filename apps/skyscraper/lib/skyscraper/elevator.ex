@@ -311,6 +311,7 @@ defmodule Skyscraper.Elevator do
       end
 
     elevator
+    |> actualize_destination_reached_notification(elevator.outer_request)
     |> Map.merge(%{destination: dest, queue: queue, outer_request: nil})
     |> set_step(:opening_doors)
   end
@@ -322,6 +323,12 @@ defmodule Skyscraper.Elevator do
   defp check_destination(elevator) do
     elevator |> actualize_moving_step()
   end
+
+  defp actualize_destination_reached_notification(elevator, true) do
+    elevator |> add_instruction({:destination_reached, elevator.destination})
+  end
+
+  defp actualize_destination_reached_notification(elevator, _outer_request), do: elevator
 
   defp actualize_moving_step(%Elevator{destination: {dest, _moving_choice}} = elevator) do
     cond do
