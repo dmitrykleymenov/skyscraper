@@ -36,15 +36,21 @@ defmodule Skyscraper.Dispatcher do
     %{dispatcher | elevators: dispatcher.elevators |> Map.put(el_id, button)}
   end
 
-  def set_time_to_destination(dispatcher, el_id, dest_info) do
+  def set_time_to_destination(%Dispatcher{} = dispatcher, el_id, dest_info) do
     # IEx.pry()
     %{dispatcher | elevators: Map.put(dispatcher.elevators, el_id, dest_info)}
+  end
+
+  def request_handled(%Dispatcher{} = dispatcher, el_id, button) do
+    dispatcher
+    |> Map.put(:queue, dispatcher.queue |> List.delete(button))
+    |> Map.put(:elevators, dispatcher.elevators |> Map.put(el_id, nil))
   end
 
   defp map_elevators(elevators), do: for(el_id <- elevators, do: {el_id, nil}, into: %{})
 
   defp optimal_elevator(elevators_handle_time) do
-    IEx.pry()
+    # IEx.pry()
 
     elevators_handle_time
     |> Enum.filter(&elem(&1, 1))

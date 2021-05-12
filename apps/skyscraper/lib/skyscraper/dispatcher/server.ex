@@ -20,6 +20,12 @@ defmodule Skyscraper.Dispatcher.Server do
     |> GenServer.call({:set_time_to_destination, el_id, dest_info})
   end
 
+  def notify_destination_reached(id, el_id, destination) do
+    id
+    |> name()
+    |> GenServer.cast({:request_handled, el_id, destination})
+  end
+
   def notify_new_destination(id, elevator_id) do
     id
     |> name()
@@ -54,6 +60,15 @@ defmodule Skyscraper.Dispatcher.Server do
   end
 
   def handle_cast({:elevator_changed_destination, _elevator}, state) do
+    {:noreply, state}
+  end
+
+  def handle_cast({:request_handled, el_id, destination}, state) do
+    state =
+      state
+      |> Map.put(:dispatcher, state.dispatcher |> Dispatcher.request_handled(el_id, destination))
+      |> display()
+
     {:noreply, state}
   end
 
