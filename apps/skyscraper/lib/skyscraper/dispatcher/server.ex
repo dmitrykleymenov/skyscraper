@@ -1,6 +1,7 @@
 defmodule Skyscraper.Dispatcher.Server do
   alias Skyscraper.Elevator.Server, as: Elevator
   alias Skyscraper.{Dispatcher, Interface}
+  require IEx
   use GenServer
 
   def start_link(opts) do
@@ -11,6 +12,12 @@ defmodule Skyscraper.Dispatcher.Server do
     id
     |> name()
     |> GenServer.cast({:push_button, button})
+  end
+
+  def set_time_to_destination(id, el_id, dest_info) do
+    id
+    |> name()
+    |> GenServer.call({:set_time_to_destination, el_id, dest_info})
   end
 
   def notify_new_destination(id, elevator_id) do
@@ -28,27 +35,48 @@ defmodule Skyscraper.Dispatcher.Server do
      }}
   end
 
-  def handle_cast({:push_button, button}, %{dispatcher: disp} = state) do
-    disp = disp |> Dispatcher.push_button(button) |> process_new_state(state) |> display()
+  def handle_cast({:push_button, button}, state) do
+    # TODO: refactor to macros, since we should ask if button active and processible, before ask elevators about handle time
+    state =
+      if Dispatcher.button_active?(state.dispatcher, button) do
+        state
+      else
+        state.dispatcher
+        |> Dispatcher.push_button(
+          button,
+          elevators_handle_time(state.building, state.dispatcher, button)
+        )
+        |> process_new_state(state)
+        |> display()
+      end
 
-    {:noreply, %{state | dispather: disp}}
+    {:noreply, state}
   end
 
   def handle_cast({:elevator_changed_destination, _elevator}, state) do
     {:noreply, state}
   end
 
-  defp appoint_executor(elevators, _button, nil), do: elevators
+  def handle_call({:set_time_to_destination, el_id, dest_info}, _caller, state) do
+    dispatcher =
+      state.dispatcher
+      |> Dispatcher.set_time_to_destination(el_id, dest_info)
 
-  defp appoint_executor(elevators, button, {el_id, handle_time}) do
-    elevators
-    |> Enum.find(fn {_id, {dest, _time}} -> dest == button end)
-    |> elem(0)
-    |> cancel_request(button)
+    {:reply, :ok, %{state | dispatcher: dispatcher}}
   end
 
-  defp cancel_request(el_id, button) do
-    Elevator.cancel_request()
+  defp elevators_handle_time(building, dispatcher, button) do
+    # IEx.pry()
+
+    dispatcher
+    |> Dispatcher.elevator_ids()
+    |> Enum.map(fn el_id ->
+      {el_id,
+       Task.Supervisor.async(Skyscraper.TaskSupervisor, fn ->
+         Elevator.get_handle_time(building, el_id, button)
+       end)}
+    end)
+    |> Enum.map(&{&1 |> elem(0), &1 |> elem(1) |> Task.await()})
   end
 
   defp name(id) do
@@ -56,20 +84,19 @@ defmodule Skyscraper.Dispatcher.Server do
   end
 
   defp process_new_state({instructions, dispatcher}, state) do
-    Enum.each(instructions, &run_instruction(&1, dispatcher, state))
+    Enum.reduce(instructions, dispatcher, &run_instruction(&1, &2, state))
 
     %{state | dispatcher: dispatcher}
   end
 
-  defp run_instruction(:reserve_step_time, dispatcher, _state) do
-    # {:ok, _} = elevator |> Elevator.step_duration() |> :timer.send_after(:step_completed)
+  defp run_instruction({:propose_to_handle, el_id, buttons}, dispatcher, state) do
+    state.building |> Elevator.propose(el_id, buttons)
+    dispatcher
   end
 
-  # defp run_instruction(:notify_new_destination, _elevator, state) do
-  #   :ok = Dispatcher.notify_new_destination(state.dispatcher, state.id)
-  # end
-
   defp display(state) do
+    # IEx.pry()
+
     Enum.each(state.interface_mods, fn interface_mod ->
       Task.Supervisor.start_child(Skyscraper.TaskSupervisor, fn ->
         Interface.change_dispatcher_state(

@@ -1,5 +1,6 @@
 defmodule Skyscraper do
   alias Skyscraper.Elevator.Server, as: Elevator
+  alias Skyscraper.Dispatcher.Server, as: Dispatcher
   alias Skyscraper.Interface.Console
   alias Skyscraper.{BuildingsSupervisor, BuildingSupervisor}
 
@@ -29,6 +30,10 @@ defmodule Skyscraper do
 
   def push_elevator_button(building, elevator_id, floor) do
     Elevator.push_button(building, elevator_id, floor)
+  end
+
+  def push_hall_button(building, button) do
+    Dispatcher.push_button(building, button)
   end
 
   defp floors(floors_amount) do
