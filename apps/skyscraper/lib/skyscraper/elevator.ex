@@ -156,6 +156,16 @@ defmodule Skyscraper.Elevator do
     |> extract_instructions()
   end
 
+  def cancel_request(%Elevator{destination: dest, outer_request: true} = elevator, dest) do
+    elevator
+    |> cancel_destination()
+    |> Map.put(:outer_request, nil)
+    |> add_instruction(:notify_new_destination)
+    |> extract_instructions()
+  end
+
+  def cancel_request(%Elevator{} = elevator, _dest), do: elevator |> extract_instructions()
+
   defp actualize_destination_time_notification(%{outer_request: nil} = elevator), do: elevator
 
   defp actualize_destination_time_notification(elevator) do

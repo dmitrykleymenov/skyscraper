@@ -23,6 +23,10 @@ defmodule Skyscraper.Elevator.Server do
     GenServer.cast(name(building, id), {:propose, buttons})
   end
 
+  def cancel_request(building, id, dest) do
+    GenServer.cast(name(building, id), {:cancel_request, dest})
+  end
+
   @impl GenServer
   def init(opts) do
     {:ok,
@@ -42,6 +46,11 @@ defmodule Skyscraper.Elevator.Server do
   @impl GenServer
   def handle_cast({:propose, buttons}, %{elevator: elevator} = state) do
     {:noreply, elevator |> Elevator.propose(buttons) |> process_new_state(state)}
+  end
+
+  @impl GenServer
+  def handle_call({:cancel_request, dest}, %{elevator: elevator} = state) do
+    {:noreply, elevator |> Elevator.cancel_request(dest) |> process_new_state(state)}
   end
 
   @impl GenServer

@@ -73,11 +73,12 @@ defmodule Skyscraper.Dispatcher.Server do
   end
 
   def handle_call({:set_time_to_destination, el_id, dest_info}, _caller, state) do
-    dispatcher =
+    state =
       state.dispatcher
       |> Dispatcher.set_time_to_destination(el_id, dest_info)
+      |> process_new_state(state)
 
-    {:reply, :ok, %{state | dispatcher: dispatcher}}
+    {:reply, :ok, state}
   end
 
   defp elevators_handle_time(building, dispatcher, button) do
@@ -105,7 +106,12 @@ defmodule Skyscraper.Dispatcher.Server do
   end
 
   defp run_instruction({:propose_to_handle, el_id, buttons}, dispatcher, state) do
-    state.building |> Elevator.propose(el_id, buttons)
+    :ok = state.building |> Elevator.propose(el_id, buttons)
+    dispatcher
+  end
+
+  defp run_instruction({:cancel_request, el_id, dest}, dispatcher, state) do
+    :ok = state.building |> Elevator.cancel_request(el_id, dest)
     dispatcher
   end
 

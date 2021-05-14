@@ -31,14 +31,21 @@ defmodule Skyscraper.Dispatcher do
 
   def elevator_ids(%Dispatcher{elevators: elevators}), do: elevators |> Map.keys()
 
-  def elevator_accepted(%Dispatcher{} = dispatcher, el_id, button) do
+  def set_time_to_destination(%Dispatcher{} = dispatcher, el_id, {dest, new_time} = dest_info) do
     # IEx.pry()
-    %{dispatcher | elevators: dispatcher.elevators |> Map.put(el_id, button)}
-  end
+    dispatcher.elevators
+    |> Enum.reduce(dispatcher, fn
+      disp, {^el_id, _dest_info} ->
+        disp |> put_in([:elevators, el_id], dest_info)
 
-  def set_time_to_destination(%Dispatcher{} = dispatcher, el_id, dest_info) do
-    # IEx.pry()
-    %{dispatcher | elevators: Map.put(dispatcher.elevators, el_id, dest_info)}
+      disp, {id, {^dest, time}} when time > new_time ->
+        disp
+        |> add_instruction({:cancel_request, id, dest})
+        |> put_in([:elevators, id], nil)
+
+      disp, _ ->
+        disp
+    end)
   end
 
   def request_handled(%Dispatcher{} = dispatcher, el_id, button) do

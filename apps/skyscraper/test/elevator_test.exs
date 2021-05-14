@@ -619,7 +619,7 @@ defmodule Skyscraper.ElevatorTest do
     end
   end
 
-  describe(".propose/2") do
+  describe ".propose/2" do
     test "accepts any destination when idling", %{elevator: elevator} do
       {instructions, new_elevator} = elevator |> Elevator.propose([{{5, :up}, nil}])
 
@@ -677,6 +677,28 @@ defmodule Skyscraper.ElevatorTest do
         elevator |> Elevator.propose([{{5, :up}, nil}, {{2, :up}, nil}, {{9, :up}, nil}])
 
       assert instructions == [{:send_time_for_destination, {{2, :up}, 3000}}]
+    end
+  end
+
+  describe ".cancel_request/2" do
+    @tag additionals: [destination: {7, :up}, step: :moving, direction: :up, outer_request: true]
+    test "removes current destination and set it to nil when it is equal to provided one by params, is outer request and nothing is in queue",
+         %{elevator: elevator} do
+      assert elevator.destination == {7, :up}
+
+      {instructions, elevator} = elevator |> Elevator.cancel_request({7, :up})
+      assert instructions == [:notify_new_destination]
+      refute elevator.destination
+    end
+
+    @tag additionals: [destination: {7, :up}, step: :moving, direction: :up, outer_request: true]
+    test "removes current destination and takes next from queue when it is equal to provided one by params and is outer request",
+         %{elevator: elevator} do
+      assert elevator.destination == {7, :up}
+
+      {instructions, elevator} = elevator |> Elevator.cancel_request({7, :up})
+      assert instructions == [:notify_new_destination]
+      refute elevator.destination
     end
   end
 end
