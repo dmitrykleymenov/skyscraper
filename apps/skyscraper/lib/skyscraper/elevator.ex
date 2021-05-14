@@ -2,7 +2,6 @@ defmodule Skyscraper.Elevator do
   alias __MODULE__
   alias Skyscraper.Elevator.Queue
   @default_step_duration 1000
-  require IEx
 
   defstruct [
     :queue,
@@ -177,10 +176,7 @@ defmodule Skyscraper.Elevator do
   end
 
   defp skip_destination_handling_time(elevator) do
-    first = processing_time(elevator)
-    second = processing_time(elevator |> cancel_destination())
-    # IEx.pry()
-    first - second
+    processing_time(elevator) - processing_time(elevator |> cancel_destination())
   end
 
   defp cancel_destination(%Elevator{destination: {_floor, moving_choice}} = elevator) do
