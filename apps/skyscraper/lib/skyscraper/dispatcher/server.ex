@@ -59,7 +59,12 @@ defmodule Skyscraper.Dispatcher.Server do
     {:noreply, state}
   end
 
-  def handle_cast({:elevator_changed_destination, _elevator}, state) do
+  def handle_cast({:elevator_changed_destination, el_id}, state) do
+    state =
+      state.dispatcher
+      |> Dispatcher.propose_requests(el_id)
+      |> process_new_state(state)
+
     {:noreply, state}
   end
 

@@ -57,6 +57,10 @@ defmodule Skyscraper.Dispatcher do
     |> Map.put(:elevators, dispatcher.elevators |> Map.put(el_id, nil))
   end
 
+  def propose_requests(%Dispatcher{} = dispatcher, el_id) do
+    dispatcher |> add_proposal_instruction(el_id, dispatcher.queue) |> extract_instructions()
+  end
+
   defp map_elevators(elevators), do: for(el_id <- elevators, do: {el_id, nil}, into: %{})
 
   defp optimal_elevator(elevators_handle_time) do
