@@ -33,19 +33,22 @@ defmodule Skyscraper.Dispatcher do
 
   def set_time_to_destination(%Dispatcher{} = dispatcher, el_id, {dest, new_time} = dest_info) do
     # IEx.pry()
+
     dispatcher.elevators
     |> Enum.reduce(dispatcher, fn
-      disp, {^el_id, _dest_info} ->
-        disp |> put_in([:elevators, el_id], dest_info)
+      {^el_id, _dest_info}, disp ->
+        disp
+        |> put_elevator_destination(el_id, dest_info)
 
-      disp, {id, {^dest, time}} when time > new_time ->
+      {id, {^dest, time}}, disp when time > new_time ->
         disp
         |> add_instruction({:cancel_request, id, dest})
-        |> put_in([:elevators, id], nil)
+        |> put_elevator_destination(el_id, nil)
 
-      disp, _ ->
+      _, disp ->
         disp
     end)
+    |> extract_instructions()
   end
 
   def request_handled(%Dispatcher{} = dispatcher, el_id, button) do
@@ -63,6 +66,10 @@ defmodule Skyscraper.Dispatcher do
     |> Enum.filter(&elem(&1, 1))
     |> Enum.min_by(&elem(&1, 1), fn -> {nil, nil} end)
     |> elem(0)
+  end
+
+  defp put_elevator_destination(destination, el_id, dest_info) do
+    destination |> Map.put(:elevators, destination.elevators |> Map.put(el_id, dest_info))
   end
 
   defp add_proposal_instruction(dispatcher, nil, _buttons), do: dispatcher
