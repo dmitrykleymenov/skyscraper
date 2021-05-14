@@ -2,7 +2,6 @@ defmodule Skyscraper.ElevatorTest do
   alias Skyscraper.Elevator
   alias Skyscraper.Elevator.Queue
   use ExUnit.Case, async: true
-  # doctest Elevator
 
   setup context do
     elevator =
@@ -573,14 +572,6 @@ defmodule Skyscraper.ElevatorTest do
 
       %{elevator: elevator}
     end
-
-    # @tag additionals: %{current_floor: 2, step: :idling}
-    # test "returns zero when destination is empty",
-    #      %{
-    #        elevator: elevator
-    #      } do
-    #   assert elevator |> Elevator.additional_handling_time({4, :up}) == 0
-    # end
 
     @tag additionals: %{destination: {6, :up}, current_floor: 2, step: :moving, direction: :up}
     test "returns only doors status changing time when request direction is up and destination on the way",
