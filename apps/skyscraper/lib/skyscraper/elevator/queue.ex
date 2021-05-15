@@ -3,7 +3,7 @@ defmodule Skyscraper.Elevator.Queue do
   defstruct [:down_queue, :up_queue]
 
   @doc """
-    builds a queue struct with defaults
+    builds a `queue` struct
   """
 
   def build() do
@@ -14,7 +14,7 @@ defmodule Skyscraper.Elevator.Queue do
   end
 
   @doc """
-    Pushes a destination to queue dependend of direction
+    Pushes a destination floor to `queue` dependend of moving choice
   """
 
   def push(%Queue{} = queue, nil), do: queue
@@ -36,7 +36,7 @@ defmodule Skyscraper.Elevator.Queue do
   end
 
   @doc """
-    Returns next destination and the rest queue
+    Returns next destination and the remained queue for given `queue`
   """
 
   def pop(queue, :up) do
