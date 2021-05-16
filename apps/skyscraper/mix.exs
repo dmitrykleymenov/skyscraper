@@ -40,7 +40,8 @@ defmodule Skyscraper.MixProject do
       {:ecto_sql, "~> 3.4"},
       {:postgrex, ">= 0.0.0"},
       {:jason, "~> 1.0"},
-      {:cortex, "~> 0.1", only: [:dev, :test]}
+      {:cortex, "~> 0.1", only: [:dev, :test]},
+      {:pow, "~> 1.0.23"}
     ]
   end
 
