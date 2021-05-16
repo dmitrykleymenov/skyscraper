@@ -91,8 +91,42 @@ defmodule Skyscraper.DispatcherTest do
     end
   end
 
+  describe ".prpose_requests/2" do
+    setup %{dispatcher: dispatcher} do
+      %{dispatcher: %{dispatcher | queue: [{5, :up}, {6, :down}, {7, :up}]}}
+    end
+
+    test "adds all queued requests to proposal instruction", %{dispatcher: dispatcher} do
+      {instructions, new_dispatcher} = dispatcher |> Dispatcher.propose_requests(1)
+
+      assert dispatcher == new_dispatcher
+
+      assert instructions == [
+               {:propose_to_handle, 1, [{{5, :up}, nil}, {{6, :down}, nil}, {{7, :up}, nil}]}
+             ]
+    end
+
+    test "adds all queued requests with current handle time to proposal instruction", %{
+      dispatcher: dispatcher
+    } do
+      dispatcher =
+        dispatcher
+        |> Map.put(:elevators, %{1 => nil, 2 => {{5, :up}, 5000}, 3 => {{7, :up}, 6000}})
+
+      {instructions, new_dispatcher} =
+        dispatcher
+        |> Dispatcher.propose_requests(1)
+
+      assert dispatcher == new_dispatcher
+
+      assert instructions == [
+               {:propose_to_handle, 1, [{{5, :up}, 5000}, {{6, :down}, nil}, {{7, :up}, 6000}]}
+             ]
+    end
+  end
+
   describe ".button_active?/2" do
-    test "truthy when the button in queue" do
+    test "truthy when the button is in queue" do
       assert %Dispatcher{queue: [{5, :up}]} |> Dispatcher.button_active?({5, :up})
     end
 

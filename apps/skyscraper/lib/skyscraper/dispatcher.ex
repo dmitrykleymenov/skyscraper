@@ -1,6 +1,5 @@
 defmodule Skyscraper.Dispatcher do
   alias Skyscraper.Dispatcher
-  require IEx
   defstruct [:queue, :elevators, :instructions, :buttons]
 
   def build(args) do
