@@ -1,6 +1,6 @@
-defmodule Skyscraper.Elevator do
+defmodule SkyscraperOtp.Elevator do
   alias __MODULE__
-  alias Skyscraper.Elevator.Queue
+  alias SkyscraperOtp.Elevator.Queue
   @default_step_duration 1000
 
   defstruct [

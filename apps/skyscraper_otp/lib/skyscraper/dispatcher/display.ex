@@ -1,6 +1,6 @@
-defmodule Skyscraper.Dispatcher.Display do
+defmodule SkyscraperOtp.Dispatcher.Display do
   alias __MODULE__
-  alias Skyscraper.Dispatcher
+  alias SkyscraperOtp.Dispatcher
   defstruct [:building, :buttons]
 
   def build(building, dispatcher) do

@@ -1,5 +1,5 @@
-defmodule Skyscraper.Elevator.QueueTest do
-  alias Skyscraper.Elevator.Queue
+defmodule SkyscraperOtp.Elevator.QueueTest do
+  alias SkyscraperOtp.Elevator.Queue
   use ExUnit.Case, async: true
 
   test "returns list of all queued destinations" do

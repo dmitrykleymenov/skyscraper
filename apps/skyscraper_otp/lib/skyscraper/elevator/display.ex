@@ -1,6 +1,6 @@
-defmodule Skyscraper.Elevator.Display do
+defmodule SkyscraperOtp.Elevator.Display do
   alias __MODULE__
-  alias Skyscraper.Elevator
+  alias SkyscraperOtp.Elevator
   defstruct [:building, :elevator_id, :status, :current_floor, :floor_buttons]
 
   def build(building, id, car) do

@@ -1,6 +1,6 @@
-defmodule Skyscraper.ElevatorTest do
-  alias Skyscraper.Elevator
-  alias Skyscraper.Elevator.Queue
+defmodule SkyscraperOtp.ElevatorTest do
+  alias SkyscraperOtp.Elevator
+  alias SkyscraperOtp.Elevator.Queue
   use ExUnit.Case, async: true
 
   setup context do

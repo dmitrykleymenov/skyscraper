@@ -1,5 +1,5 @@
-defmodule Skyscraper.DispatcherTest do
-  alias Skyscraper.Dispatcher
+defmodule SkyscraperOtp.DispatcherTest do
+  alias SkyscraperOtp.Dispatcher
   use ExUnit.Case, async: true
 
   setup do

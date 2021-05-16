@@ -1,5 +1,5 @@
-defmodule Skyscraper.Dispatcher do
-  alias Skyscraper.Dispatcher
+defmodule SkyscraperOtp.Dispatcher do
+  alias SkyscraperOtp.Dispatcher
   defstruct [:queue, :elevators, :instructions, :buttons]
 
   def build(args) do

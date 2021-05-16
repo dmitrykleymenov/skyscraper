@@ -1,5 +1,5 @@
-defmodule Skyscraper.Elevator.Queue do
-  alias Skyscraper.Elevator.Queue
+defmodule SkyscraperOtp.Elevator.Queue do
+  alias SkyscraperOtp.Elevator.Queue
   defstruct [:down_queue, :up_queue]
 
   @doc """

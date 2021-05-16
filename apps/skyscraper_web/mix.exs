@@ -46,6 +46,7 @@ defmodule SkyscraperWeb.MixProject do
       {:telemetry_poller, "~> 0.4"},
       {:gettext, "~> 0.11"},
       {:skyscraper, in_umbrella: true},
+      {:skyscraper_otp, in_umbrella: true},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"}
     ]

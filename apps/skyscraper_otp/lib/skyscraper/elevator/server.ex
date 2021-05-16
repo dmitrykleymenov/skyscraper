@@ -1,8 +1,8 @@
-defmodule Skyscraper.Elevator.Server do
+defmodule SkyscraperOtp.Elevator.Server do
   use GenServer
   require IEx
-  alias Skyscraper.Dispatcher.Server, as: Dispatcher
-  alias Skyscraper.{Elevator, Interface}
+  alias SkyscraperOtp.Dispatcher.Server, as: Dispatcher
+  alias SkyscraperOtp.{Elevator, Interface}
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: name_from_opts(opts))
@@ -68,7 +68,7 @@ defmodule Skyscraper.Elevator.Server do
   end
 
   def name(building, id) do
-    {:via, Registry, {Skyscraper.Registry, {__MODULE__, building, id}}}
+    {:via, Registry, {SkyscraperOtp.Registry, {__MODULE__, building, id}}}
   end
 
   defp name_from_opts(opts) do
@@ -99,7 +99,7 @@ defmodule Skyscraper.Elevator.Server do
 
   defp display(state) do
     Enum.each(state.interface_mods, fn interface_module ->
-      Task.Supervisor.start_child(Skyscraper.TaskSupervisor, fn ->
+      Task.Supervisor.start_child(SkyscraperOtp.TaskSupervisor, fn ->
         Interface.change_elevator_state(
           interface_module,
           state.building,

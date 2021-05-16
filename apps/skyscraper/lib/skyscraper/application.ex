@@ -10,10 +10,7 @@ defmodule Skyscraper.Application do
       # Start the Ecto repository
       Skyscraper.Repo,
       # Start the PubSub system
-      {Phoenix.PubSub, name: Skyscraper.PubSub},
-      {Registry, name: Skyscraper.Registry, keys: :unique},
-      {DynamicSupervisor, name: Skyscraper.BuildingsSupervisor, strategy: :one_for_one},
-      {Task.Supervisor, name: Skyscraper.TaskSupervisor}
+      {Phoenix.PubSub, name: Skyscraper.PubSub}
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Skyscraper.Supervisor)

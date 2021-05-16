@@ -1,5 +1,5 @@
-defmodule Skyscraper.Interface.Console do
-  alias Skyscraper.Interface
+defmodule SkyscraperOtp.Interface.Console do
+  alias SkyscraperOtp.Interface
   @behaviour Interface
 
   @impl Interface

@@ -1,3 +1,3 @@
 # Skyscraper
 
-**TODO: Add description**
+**Whole data-dependent logic for Skyscraper Project**

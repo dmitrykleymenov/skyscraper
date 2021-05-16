@@ -1,6 +1,6 @@
-defmodule Skyscraper.Dispatcher.Server do
-  alias Skyscraper.Elevator.Server, as: Elevator
-  alias Skyscraper.{Dispatcher, Interface}
+defmodule SkyscraperOtp.Dispatcher.Server do
+  alias SkyscraperOtp.Elevator.Server, as: Elevator
+  alias SkyscraperOtp.{Dispatcher, Interface}
   require IEx
   use GenServer
 
@@ -93,7 +93,7 @@ defmodule Skyscraper.Dispatcher.Server do
     |> Dispatcher.elevator_ids()
     |> Enum.map(fn el_id ->
       {el_id,
-       Task.Supervisor.async(Skyscraper.TaskSupervisor, fn ->
+       Task.Supervisor.async(SkyscraperOtp.TaskSupervisor, fn ->
          Elevator.get_handle_time(building, el_id, button)
        end)}
     end)
@@ -101,7 +101,7 @@ defmodule Skyscraper.Dispatcher.Server do
   end
 
   defp name(id) do
-    {:via, Registry, {Skyscraper.Registry, {__MODULE__, id}}}
+    {:via, Registry, {SkyscraperOtp.Registry, {__MODULE__, id}}}
   end
 
   defp process_new_state({instructions, dispatcher}, state) do
@@ -124,7 +124,7 @@ defmodule Skyscraper.Dispatcher.Server do
     # IEx.pry()
 
     Enum.each(state.interface_mods, fn interface_mod ->
-      Task.Supervisor.start_child(Skyscraper.TaskSupervisor, fn ->
+      Task.Supervisor.start_child(SkyscraperOtp.TaskSupervisor, fn ->
         Interface.change_dispatcher_state(
           interface_mod,
           state.building,

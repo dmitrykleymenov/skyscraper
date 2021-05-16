@@ -1,7 +1,7 @@
-defmodule Skyscraper.BuildingSupervisor do
+defmodule SkyscraperOtp.BuildingSupervisor do
   use Supervisor
-  alias Skyscraper.Dispatcher.Server, as: Dispatcher
-  alias Skyscraper.Elevator.Server, as: Elevator
+  alias SkyscraperOtp.Dispatcher.Server, as: Dispatcher
+  alias SkyscraperOtp.Elevator.Server, as: Elevator
 
   def start_link(arg) do
     Supervisor.start_link(__MODULE__, arg)
