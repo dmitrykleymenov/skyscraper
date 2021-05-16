@@ -50,6 +50,7 @@ defmodule SkyscraperWeb.MixProject do
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:pow, "~> 1.0.23"}
+    ]
   end
 
   # Aliases are shortcuts or tasks specific to the current project.

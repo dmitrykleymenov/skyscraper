@@ -14,6 +14,11 @@ defmodule SkyscraperWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :protected do
+    plug Pow.Plug.RequireAuthenticated,
+      error_handler: Pow.Phoenix.PlugErrorHandler
+  end
+
   scope "/" do
     pipe_through :browser
 
@@ -21,7 +26,7 @@ defmodule SkyscraperWeb.Router do
   end
 
   scope "/", SkyscraperWeb do
-    pipe_through :browser
+    pipe_through [:browser, :protected]
 
     get "/", PageController, :index
   end
