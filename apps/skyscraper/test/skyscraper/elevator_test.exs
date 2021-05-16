@@ -11,7 +11,7 @@ defmodule Skyscraper.ElevatorTest do
     %{elevator: elevator}
   end
 
-  test "builds a Elevator struct with the given params" do
+  test "builds an Elevator struct with the given params" do
     elevator = Elevator.build(current_floor: 5, floors: [4, 5, 6])
     assert %Elevator{} = elevator
     assert elevator |> Elevator.current_floor() == 5
