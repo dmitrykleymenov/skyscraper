@@ -32,8 +32,6 @@ defmodule Skyscraper.Dispatcher do
   def elevator_ids(%Dispatcher{elevators: elevators}), do: elevators |> Map.keys()
 
   def set_time_to_destination(%Dispatcher{} = dispatcher, el_id, {dest, new_time} = dest_info) do
-    # IEx.pry()
-
     dispatcher.elevators
     |> Enum.reduce(dispatcher, fn
       {^el_id, _dest_info}, disp ->
@@ -43,7 +41,7 @@ defmodule Skyscraper.Dispatcher do
       {id, {^dest, time}}, disp when time > new_time ->
         disp
         |> add_instruction({:cancel_request, id, dest})
-        |> put_elevator_destination(el_id, nil)
+        |> put_elevator_destination(id, nil)
 
       _, disp ->
         disp
@@ -64,22 +62,19 @@ defmodule Skyscraper.Dispatcher do
   defp map_elevators(elevators), do: for(el_id <- elevators, do: {el_id, nil}, into: %{})
 
   defp optimal_elevator(elevators_handle_time) do
-    # IEx.pry()
-
     elevators_handle_time
     |> Enum.filter(&elem(&1, 1))
     |> Enum.min_by(&elem(&1, 1), fn -> {nil, nil} end)
     |> elem(0)
   end
 
-  defp put_elevator_destination(destination, el_id, dest_info) do
-    destination |> Map.put(:elevators, destination.elevators |> Map.put(el_id, dest_info))
+  defp put_elevator_destination(dispatcher, el_id, dest_info) do
+    dispatcher |> Map.put(:elevators, dispatcher.elevators |> Map.put(el_id, dest_info))
   end
 
   defp add_proposal_instruction(dispatcher, nil, _buttons), do: dispatcher
 
   defp add_proposal_instruction(dispatcher, el_id, buttons) do
-    # IEx.pry()
     active = for {_id, button} <- dispatcher.elevators, button, into: %{}, do: button
 
     dispatcher
