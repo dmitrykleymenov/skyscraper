@@ -15,14 +15,14 @@
           <ul>
           <%= if Pow.Plug.current_user(@conn) do %>
             <li><%= link "Sign out", to: Routes.pow_session_path(@conn, :delete), method: :delete %></li>
-            <li><%= link "Manage building", to: Routes.building_path(@conn, :index)%></li>
+            <li><%= link "Manage building", to: Routes.building_path(@conn, :edit)%></li>
           <% else %>
             <li><%= link "Register", to: Routes.pow_registration_path(@conn, :new) %></li>
             <li><%= link "Sign in", to: Routes.pow_session_path(@conn, :new) %></li>
           <% end %>
           </ul>
         </nav>
-        Skyscraper
+        <%= link "Skyscraper", to: Routes.page_path(@conn, :index) %>
       </section>
     </header>
     <main role="main" class="container">

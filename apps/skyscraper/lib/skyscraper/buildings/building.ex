@@ -17,5 +17,6 @@ defmodule Skyscraper.Buildings.Building do
     building
     |> cast(attrs, [:name, :floors_amount, :elevators_quantity])
     |> validate_required([:name, :floors_amount, :elevators_quantity])
+    |> unique_constraint(:name)
   end
 end

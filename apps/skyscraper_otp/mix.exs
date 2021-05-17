@@ -36,7 +36,7 @@ defmodule SkyscraperOtp.MixProject do
   defp deps do
     [
       {:prioqueue, "~> 0.2.0"},
-      {:cortex, "~> 0.1", only: [:dev, :test]}
+      {:cortex, "~> 0.1", only: [:test]}
     ]
   end
 end

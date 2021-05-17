@@ -29,7 +29,8 @@ defmodule SkyscraperWeb.Router do
     pipe_through [:browser, :protected]
 
     get "/", PageController, :index
-    resources("/building", BuildingController, only: [:index])
+    get "/building", BuildingController, :edit
+    post "/building", BuildingController, :update
   end
 
   # Other scopes may use custom stacks.

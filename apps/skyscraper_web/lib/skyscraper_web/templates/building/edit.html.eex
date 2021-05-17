@@ -1,0 +1,23 @@
+<%= form_for @changeset, Routes.building_path(@conn, :update), fn f -> %>
+  <%= if @changeset.action do %>
+    <div class="alert alert-danger">
+      <p>Oops, something went wrong! Please check the errors below.</p>
+    </div>
+  <% end %>
+
+  <%= label f, :name %>
+  <%= text_input f, :name %>
+  <%= error_tag f, :name %>
+
+  <%= label f, :floors_amount %>
+  <%= select f, :floors_amount, 30..50 %>
+  <%= error_tag f, :floors_amount %>
+
+  <%= label f, :elevators_quantity %>
+  <%= select f, :elevators_quantity, 2..5 %>
+  <%= error_tag f, :elevators_quantity %>
+
+  <div>
+    <%= submit "Save" %>
+  </div>
+<% end %>
