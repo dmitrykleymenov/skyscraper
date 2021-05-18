@@ -18,10 +18,16 @@ defmodule SkyscraperOtp do
       interface_mods: Keyword.get(arg, :interface_mods, [Console])
     ]
 
-    DynamicSupervisor.start_child(
-      BuildingsSupervisor,
-      Supervisor.child_spec({BuildingSupervisor, args}, id: name)
-    )
+    DynamicSupervisor.start_child(BuildingsSupervisor, {BuildingSupervisor, args})
+  end
+
+  def destroy(arg) do
+    building =
+      arg
+      |> Keyword.fetch!(:name)
+      |> BuildingSupervisor.name()
+
+    DynamicSupervisor.terminate_child(BuildingsSupervisor, building)
   end
 
   def push_elevator_button(building, elevator_id, floor) do

@@ -11,20 +11,25 @@ defmodule SkyscraperOtp.Elevator.Server do
   @doc """
    Handles inside cabin button push
   """
-  def push_button(building, id, button) do
-    GenServer.cast(name(building, id), {:push_elevator_button, button})
+
+  def push_button(building, id, button, registry \\ SkyscraperOtp.Registry) do
+    name(building, id, registry)
+    |> GenServer.cast({:push_elevator_button, button})
   end
 
-  def get_handle_time(building, id, button) do
-    GenServer.call(name(building, id), {:get_handle_time, button})
+  def get_handle_time(building, id, button, registry \\ SkyscraperOtp.Registry) do
+    name(building, id, registry)
+    |> GenServer.call({:get_handle_time, button})
   end
 
-  def propose(building, id, buttons) do
-    GenServer.cast(name(building, id), {:propose, buttons})
+  def propose(building, id, buttons, registry \\ SkyscraperOtp.Registry) do
+    name(building, id, registry)
+    |> GenServer.cast({:propose, buttons})
   end
 
-  def cancel_request(building, id, dest) do
-    GenServer.cast(name(building, id), {:cancel_request, dest})
+  def cancel_request(building, id, dest, registry \\ SkyscraperOtp.Registry) do
+    name(building, id, registry)
+    |> GenServer.cast({:cancel_request, dest})
   end
 
   @impl GenServer
@@ -67,12 +72,16 @@ defmodule SkyscraperOtp.Elevator.Server do
     {:reply, reply, state}
   end
 
-  def name(building, id) do
-    {:via, Registry, {SkyscraperOtp.Registry, {__MODULE__, building, id}}}
+  defp name(building, id, registry) do
+    {:via, Registry, {registry, {__MODULE__, building, id}}}
   end
 
   defp name_from_opts(opts) do
-    name(Keyword.fetch!(opts, :building), Keyword.fetch!(opts, :id))
+    name(
+      Keyword.fetch!(opts, :building),
+      Keyword.fetch!(opts, :id),
+      Keyword.get(opts, :registry, SkyscraperOtp.Registry)
+    )
   end
 
   defp process_new_state({instructions, elevator}, state) do

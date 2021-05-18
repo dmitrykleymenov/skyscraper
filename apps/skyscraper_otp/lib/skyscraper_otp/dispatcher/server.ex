@@ -5,30 +5,32 @@ defmodule SkyscraperOtp.Dispatcher.Server do
   use GenServer
 
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: Keyword.fetch!(opts, :building) |> name())
+    registry = Keyword.get(opts, :registry, SkyscraperOtp.Registry)
+
+    GenServer.start_link(__MODULE__, opts, name: Keyword.fetch!(opts, :building) |> name(registry))
   end
 
-  def push_button(id, button) do
+  def push_button(id, button, registry \\ SkyscraperOtp.Registry) do
     id
-    |> name()
+    |> name(registry)
     |> GenServer.cast({:push_button, button})
   end
 
-  def set_time_to_destination(id, el_id, dest_info) do
+  def set_time_to_destination(id, el_id, dest_info, registry \\ SkyscraperOtp.Registry) do
     id
-    |> name()
+    |> name(registry)
     |> GenServer.call({:set_time_to_destination, el_id, dest_info})
   end
 
-  def notify_destination_reached(id, el_id, destination) do
+  def notify_destination_reached(id, el_id, destination, registry \\ SkyscraperOtp.Registry) do
     id
-    |> name()
+    |> name(registry)
     |> GenServer.cast({:request_handled, el_id, destination})
   end
 
-  def notify_new_destination(id, elevator_id) do
+  def notify_new_destination(id, elevator_id, registry \\ SkyscraperOtp.Registry) do
     id
-    |> name()
+    |> name(registry)
     |> GenServer.cast({:elevator_changed_destination, elevator_id})
   end
 
@@ -100,8 +102,8 @@ defmodule SkyscraperOtp.Dispatcher.Server do
     |> Enum.map(&{&1 |> elem(0), &1 |> elem(1) |> Task.await()})
   end
 
-  defp name(id) do
-    {:via, Registry, {SkyscraperOtp.Registry, {__MODULE__, id}}}
+  defp name(id, registry) do
+    {:via, Registry, {registry, {__MODULE__, id}}}
   end
 
   defp process_new_state({instructions, dispatcher}, state) do
