@@ -4,8 +4,8 @@ defmodule SkyscraperOtp.Elevator.Server do
   alias SkyscraperOtp.Dispatcher.Server, as: Dispatcher
   alias SkyscraperOtp.{Elevator, Interface}
 
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: name_from_opts(opts))
+  def start_link(arg) do
+    GenServer.start_link(__MODULE__, arg, name: name_from_arg(arg))
   end
 
   @doc """
@@ -33,13 +33,13 @@ defmodule SkyscraperOtp.Elevator.Server do
   end
 
   @impl GenServer
-  def init(opts) do
+  def init(arg) do
     {:ok,
      %{
-       elevator: Elevator.build(opts),
-       building: Keyword.fetch!(opts, :building),
-       id: Keyword.fetch!(opts, :id),
-       interface_mods: Keyword.fetch!(opts, :interface_mods)
+       elevator: Elevator.build(arg),
+       building: Keyword.fetch!(arg, :building),
+       id: Keyword.fetch!(arg, :id),
+       interface_mods: Keyword.fetch!(arg, :interface_mods)
      }}
   end
 
@@ -76,11 +76,11 @@ defmodule SkyscraperOtp.Elevator.Server do
     {:via, Registry, {registry, {__MODULE__, building, id}}}
   end
 
-  defp name_from_opts(opts) do
+  defp name_from_arg(arg) do
     name(
-      Keyword.fetch!(opts, :building),
-      Keyword.fetch!(opts, :id),
-      Keyword.get(opts, :registry, SkyscraperOtp.Registry)
+      Keyword.fetch!(arg, :building),
+      Keyword.fetch!(arg, :id),
+      Keyword.get(arg, :registry, SkyscraperOtp.Registry)
     )
   end
 

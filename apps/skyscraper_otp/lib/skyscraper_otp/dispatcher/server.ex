@@ -4,10 +4,10 @@ defmodule SkyscraperOtp.Dispatcher.Server do
   require IEx
   use GenServer
 
-  def start_link(opts) do
-    registry = Keyword.get(opts, :registry, SkyscraperOtp.Registry)
+  def start_link(arg) do
+    registry = Keyword.get(arg, :registry, SkyscraperOtp.Registry)
 
-    GenServer.start_link(__MODULE__, opts, name: Keyword.fetch!(opts, :building) |> name(registry))
+    GenServer.start_link(__MODULE__, arg, name: Keyword.fetch!(arg, :building) |> name(registry))
   end
 
   def push_button(id, button, registry \\ SkyscraperOtp.Registry) do

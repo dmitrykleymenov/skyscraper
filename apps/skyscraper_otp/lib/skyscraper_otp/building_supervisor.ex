@@ -4,7 +4,16 @@ defmodule SkyscraperOtp.BuildingSupervisor do
   alias SkyscraperOtp.Elevator.Server, as: Elevator
 
   def start_link(arg) do
-    Supervisor.start_link(__MODULE__, arg)
+    building = Keyword.fetch!(arg, :building)
+    registry = Keyword.get(arg, :registry, SkyscraperOtp.Registry)
+
+    Supervisor.start_link(__MODULE__, arg,
+      name: {:via, Registry, {registry, registry_key(building)}}
+    )
+  end
+
+  def registry_key(building) do
+    {__MODULE__, building}
   end
 
   def init(arg) do

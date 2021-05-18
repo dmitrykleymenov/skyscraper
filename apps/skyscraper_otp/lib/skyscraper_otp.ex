@@ -9,10 +9,8 @@ defmodule SkyscraperOtp do
   """
 
   def build(arg) do
-    name = Keyword.fetch!(arg, :name)
-
     args = [
-      building: name,
+      building: Keyword.fetch!(arg, :building),
       floors: Keyword.fetch!(arg, :floors_amount) |> floors(),
       elevator_ids: Keyword.fetch!(arg, :elevators_quantity) |> elevator_ids(),
       interface_mods: Keyword.get(arg, :interface_mods, [Console])
@@ -21,13 +19,10 @@ defmodule SkyscraperOtp do
     DynamicSupervisor.start_child(BuildingsSupervisor, {BuildingSupervisor, args})
   end
 
-  def destroy(arg) do
-    building =
-      arg
-      |> Keyword.fetch!(:name)
-      |> BuildingSupervisor.name()
+  def destroy(building, registry \\ SkyscraperOtp.Registry) do
+    [{pid, _}] = Registry.lookup(registry, BuildingSupervisor.registry_key(building))
 
-    DynamicSupervisor.terminate_child(BuildingsSupervisor, building)
+    DynamicSupervisor.terminate_child(BuildingsSupervisor, pid)
   end
 
   def push_elevator_button(building, elevator_id, floor) do
