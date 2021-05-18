@@ -30,7 +30,8 @@ defmodule SkyscraperWeb.Router do
 
     get "/", PageController, :index
     get "/building", BuildingController, :edit
-    post "/building", BuildingController, :update
+    post "/building", BuildingController, :create
+    put "/building", BuildingController, :update
   end
 
   # Other scopes may use custom stacks.

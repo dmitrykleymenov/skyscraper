@@ -1,7 +1,7 @@
 defmodule Skyscraper.Buildings.Building do
+  alias __MODULE__
   use Ecto.Schema
   import Ecto.Changeset
-  alias Ecto.Changeset
 
   schema "buildings" do
     field(:name, :string)
@@ -13,10 +13,19 @@ defmodule Skyscraper.Buildings.Building do
   end
 
   @doc false
-  def changeset(building, attrs) do
+  def changeset(%Building{} = building, attrs) do
     building
     |> cast(attrs, [:name, :floors_amount, :elevators_quantity])
     |> validate_required([:name, :floors_amount, :elevators_quantity])
+    |> validate_inclusion(:elevators_quantity, 2..5)
+    |> validate_inclusion(:floors_amount, 30..50)
     |> unique_constraint(:name)
+  end
+
+  @doc false
+  def create_changeset(user, attrs) do
+    %Building{}
+    |> changeset(attrs)
+    |> put_assoc(:user, user)
   end
 end
