@@ -7,7 +7,7 @@ defmodule SkyscraperWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_skyscraper_web_key",
-    signing_salt: "niesXY2v"
+    signing_salt: "UJT3ddNP"
   ]
 
   socket "/socket", SkyscraperWeb.UserSocket,

@@ -1,19 +1,19 @@
 defmodule SkyscraperWeb.Router do
   use SkyscraperWeb, :router
 
-  import Phoenix.LiveView.Router
   use Pow.Phoenix.Router
 
   pipeline :browser do
-    plug(:accepts, ["html"])
-    plug(:fetch_session)
-    plug(:fetch_flash)
-    plug(:protect_from_forgery)
-    plug(:put_secure_browser_headers)
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, {SkyscraperWeb.LayoutView, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
   end
 
   pipeline :api do
-    plug(:accepts, ["json"])
+    plug :accepts, ["json"]
   end
 
   pipeline :protected do
@@ -23,10 +23,16 @@ defmodule SkyscraperWeb.Router do
   end
 
   scope "/" do
-    pipe_through(:browser)
+    pipe_through :browser
 
-    live "/construct/:id", SkyscraperWeb.ConstructLive
     pow_routes()
+  end
+
+  scope "/", SkyscraperWeb do
+    pipe_through :browser
+
+    live "/", PageLive, :index
+    live "/construct/:id", ConstructLive
   end
 
   scope "/", SkyscraperWeb do
@@ -57,8 +63,8 @@ defmodule SkyscraperWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/" do
-      pipe_through(:browser)
-      live_dashboard("/dashboard", metrics: SkyscraperWeb.Telemetry)
+      pipe_through :browser
+      live_dashboard "/dashboard", metrics: SkyscraperWeb.Telemetry
     end
   end
 end
