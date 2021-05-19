@@ -25,6 +25,20 @@ defmodule SkyscraperOtp do
     DynamicSupervisor.terminate_child(BuildingsSupervisor, pid)
   end
 
+  def get_state(building, registry \\ SkyscraperOtp.Registry) do
+    dispatcher_state = building |> Dispatcher.get_state(registry)
+
+    elevator_states =
+      building
+      |> Dispatcher.get_elevator_ids(registry)
+      |> Enum.map(fn el_id -> Elevator.get_state(building, el_id, registry) end)
+
+    %{
+      dispatcher: dispatcher_state,
+      elevators: elevator_states
+    }
+  end
+
   def push_elevator_button(building, elevator_id, floor) do
     Elevator.push_button(building, elevator_id, floor)
   end

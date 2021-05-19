@@ -2,6 +2,7 @@ defmodule SkyscraperOtp.Elevator.Server do
   use GenServer
   require IEx
   alias SkyscraperOtp.Dispatcher.Server, as: Dispatcher
+  alias SkyscraperOtp.Elevator.Display
   alias SkyscraperOtp.{Elevator, Interface}
 
   def start_link(arg) do
@@ -30,6 +31,11 @@ defmodule SkyscraperOtp.Elevator.Server do
   def cancel_request(building, id, dest, registry \\ SkyscraperOtp.Registry) do
     name(building, id, registry)
     |> GenServer.cast({:cancel_request, dest})
+  end
+
+  def get_state(building, id, registry) do
+    name(building, id, registry)
+    |> GenServer.call({:get_state, building})
   end
 
   @impl GenServer
@@ -70,6 +76,11 @@ defmodule SkyscraperOtp.Elevator.Server do
         do: Elevator.additional_handling_time(elevator, button)
 
     {:reply, reply, state}
+  end
+
+  @impl GenServer
+  def handle_call({:get_state, building}, _caller, state) do
+    {:reply, Display.build(building, state.id, state.elevator), state}
   end
 
   defp name(building, id, registry) do

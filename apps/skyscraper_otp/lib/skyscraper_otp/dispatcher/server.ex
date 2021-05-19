@@ -1,6 +1,7 @@
 defmodule SkyscraperOtp.Dispatcher.Server do
   alias SkyscraperOtp.Elevator.Server, as: Elevator
   alias SkyscraperOtp.{Dispatcher, Interface}
+  alias SkyscraperOtp.Dispatcher.Display
   require IEx
   use GenServer
 
@@ -33,6 +34,19 @@ defmodule SkyscraperOtp.Dispatcher.Server do
     |> name(registry)
     |> GenServer.cast({:elevator_changed_destination, elevator_id})
   end
+
+  def get_elevator_ids(id, registry) do
+    id
+    |> name(registry)
+    |> GenServer.call(:get_elevator_ids)
+  end
+
+  def get_state(id, registry) do
+    id
+    |> name(registry)
+    |> GenServer.call(:get_state)
+  end
+
 
   def init(args) do
     {:ok,
@@ -86,6 +100,14 @@ defmodule SkyscraperOtp.Dispatcher.Server do
       |> process_new_state(state)
 
     {:reply, :ok, state}
+  end
+
+  def handle_call(:get_elevator_ids, _caller, state) do
+    {:reply, state.dispatcher |> Dispatcher.elevator_ids(), state}
+  end
+
+  def handle_call(:get_state, _caller, state) do
+    {:reply, Display.build(state.building, state.dispatcher), state}
   end
 
   defp elevators_handle_time(building, dispatcher, button) do

@@ -3,18 +3,18 @@ defmodule SkyscraperOtp.Elevator.Display do
   alias SkyscraperOtp.Elevator
   defstruct [:building, :elevator_id, :status, :current_floor, :floor_buttons]
 
-  def build(building, id, car) do
+  def build(building, id, elevator) do
     %Display{
       building: building,
       elevator_id: id,
-      status: car |> Elevator.step(),
-      current_floor: car |> Elevator.current_floor(),
-      floor_buttons: car |> floor_buttons()
+      status: elevator |> Elevator.step(),
+      current_floor: elevator |> Elevator.current_floor(),
+      floor_buttons: elevator |> floor_buttons()
     }
   end
 
-  defp floor_buttons(car) do
-    floors_to_handle = Elevator.floors_to_handle(car)
-    for floor <- Elevator.acceptable_floors(car), do: {floor, floor in floors_to_handle}
+  defp floor_buttons(elevator) do
+    floors_to_handle = Elevator.floors_to_handle(elevator)
+    for floor <- Elevator.acceptable_floors(elevator), do: {floor, floor in floors_to_handle}
   end
 end
