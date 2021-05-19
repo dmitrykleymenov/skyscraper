@@ -3,35 +3,40 @@ defmodule SkyscraperWeb.Router do
   use Pow.Phoenix.Router
 
   pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_flash
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_flash)
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
   end
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug(:accepts, ["json"])
   end
 
   pipeline :protected do
-    plug Pow.Plug.RequireAuthenticated,
+    plug(Pow.Plug.RequireAuthenticated,
       error_handler: Pow.Phoenix.PlugErrorHandler
+    )
   end
 
   scope "/" do
-    pipe_through :browser
+    pipe_through(:browser)
 
+    live "/construct/:id", ConstructLive
     pow_routes()
   end
 
   scope "/", SkyscraperWeb do
-    pipe_through [:browser, :protected]
+    pipe_through([:browser, :protected])
 
-    get "/", PageController, :index
-    get "/building", BuildingController, :edit
-    post "/building", BuildingController, :create
-    put "/building", BuildingController, :update
+    get("/", PageController, :index)
+    get("/building", BuildingController, :edit)
+    post("/building", BuildingController, :create)
+    put("/building", BuildingController, :update)
+
+    post("/construct", ConstructController, :create)
+    delete("/construct", ConstructController, :destroy)
   end
 
   # Other scopes may use custom stacks.
@@ -50,8 +55,8 @@ defmodule SkyscraperWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/" do
-      pipe_through :browser
-      live_dashboard "/dashboard", metrics: SkyscraperWeb.Telemetry
+      pipe_through(:browser)
+      live_dashboard("/dashboard", metrics: SkyscraperWeb.Telemetry)
     end
   end
 end
