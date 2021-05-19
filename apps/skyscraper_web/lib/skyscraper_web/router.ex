@@ -1,5 +1,7 @@
 defmodule SkyscraperWeb.Router do
   use SkyscraperWeb, :router
+
+  import Phoenix.LiveView.Router
   use Pow.Phoenix.Router
 
   pipeline :browser do
@@ -23,7 +25,7 @@ defmodule SkyscraperWeb.Router do
   scope "/" do
     pipe_through(:browser)
 
-    live "/construct/:id", ConstructLive
+    live "/construct/:id", SkyscraperWeb.ConstructLive
     pow_routes()
   end
 

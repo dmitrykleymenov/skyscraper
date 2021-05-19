@@ -17,7 +17,7 @@ defmodule SkyscraperOtp.Interface.Console do
   end
 
   defp format_elevator_status(elevator) do
-    "Elevator ##{elevator.elevator_id} from #{elevator.building} currently on the #{
+    "Elevator ##{elevator.id} from #{elevator.building} currently on the #{
       elevator.current_floor
     } floor and #{elevator.status}. #{elevator.floor_buttons |> show_elevator_buttons()}"
   end
