@@ -18,22 +18,7 @@ defmodule SkyscraperWeb.ConstructLive do
     <hr>
     <div class="elevators">
       <%= for elevator <- @elevators do %>
-        <div class="elevator">
-          <div class="number"><%= elevator.id %></div>
-          <div class="status"><%= elevator.status %></div>
-          <div class="current-floor"><%= elevator.current_floor %></div>
-          <div class="buttons">
-            <%= for {floor, active} <- elevator.floor_buttons do %>
-              <button phx-click="elevator_button_push"
-                phx-value-floor="<%= floor %>"
-                phx-value-id="<%= elevator.id %>"
-                class="car-button <%= if active, do: "active" %>">
-                  <%= floor %>
-              </button>
-            <% end %>
-          </div>
-          <br><br>
-        </div>
+        <%= live_render(@socket , SkyscraperWeb.ElevatorLive, id: elevator.id, session: %{"elevator" => elevator}) %>
       <% end %>
     </div>
     """
@@ -50,9 +35,9 @@ defmodule SkyscraperWeb.ConstructLive do
 
     socket = socket |> assign(assigns)
 
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(SkyscraperOtp.PubSub, "buillding:#{name}")
-    end
+    # if connected?(socket) do
+    #   Phoenix.PubSub.subscribe(SkyscraperOtp.PubSub, "building:#{name}")
+    # end
 
     {:ok, socket}
   end

@@ -22,7 +22,7 @@ config :skyscraper_web, SkyscraperWeb.Endpoint,
   url: [host: "localhost"],
   secret_key_base: "OuNyh0/ZY8ASEcKI7eKCdb9/l9BYaMSFG7xDXPYqcz1MppyzFgtRjiRtrPsKqAJ9",
   render_errors: [view: SkyscraperWeb.ErrorView, accepts: ~w(html json), layout: false],
-  pubsub_server: Skyscraper.PubSub,
+  pubsub_server: SkyscraperOtp.PubSub,
   live_view: [signing_salt: "Bxm4dW92"]
 
 # Configures Elixir's Logger

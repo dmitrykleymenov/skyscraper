@@ -1,7 +1,7 @@
 defmodule SkyscraperOtp do
   alias SkyscraperOtp.Elevator.Server, as: Elevator
   alias SkyscraperOtp.Dispatcher.Server, as: Dispatcher
-  alias SkyscraperOtp.Interface.Console
+  alias SkyscraperOtp.Interface.{Console, Broadcast}
   alias SkyscraperOtp.{BuildingsSupervisor, BuildingSupervisor}
 
   @moduledoc """
@@ -13,7 +13,7 @@ defmodule SkyscraperOtp do
       building: Keyword.fetch!(arg, :building),
       floors: Keyword.fetch!(arg, :floors_amount) |> floors(),
       elevator_ids: Keyword.fetch!(arg, :elevators_quantity) |> elevator_ids(),
-      interface_mods: Keyword.get(arg, :interface_mods, [Console])
+      interface_mods: Keyword.get(arg, :interface_mods, [Console, Broadcast])
     ]
 
     DynamicSupervisor.start_child(BuildingsSupervisor, {BuildingSupervisor, args})
