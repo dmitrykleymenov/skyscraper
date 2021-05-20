@@ -35,6 +35,7 @@ defmodule SkyscraperOtp.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:phoenix_pubsub, "~> 2.0"},
       {:prioqueue, "~> 0.2.0"},
       {:cortex, "~> 0.1", only: [:test]}
     ]

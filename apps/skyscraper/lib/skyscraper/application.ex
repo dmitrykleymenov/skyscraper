@@ -7,10 +7,7 @@ defmodule Skyscraper.Application do
 
   def start(_type, _args) do
     children = [
-      # Start the Ecto repository
-      Skyscraper.Repo,
-      # Start the PubSub system
-      {Phoenix.PubSub, name: Skyscraper.PubSub}
+      Skyscraper.Repo
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Skyscraper.Supervisor)

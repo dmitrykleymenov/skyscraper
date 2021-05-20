@@ -9,7 +9,8 @@ defmodule SkyscraperOtp.Application do
     children = [
       {Registry, name: SkyscraperOtp.Registry, keys: :unique},
       {DynamicSupervisor, name: SkyscraperOtp.BuildingsSupervisor, strategy: :one_for_one},
-      {Task.Supervisor, name: SkyscraperOtp.TaskSupervisor}
+      {Task.Supervisor, name: SkyscraperOtp.TaskSupervisor},
+      {Phoenix.PubSub, name: SkyscraperOtp.PubSub}
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: SkyscraperOtp.Supervisor)
