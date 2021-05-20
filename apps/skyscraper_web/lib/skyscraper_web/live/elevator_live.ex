@@ -1,6 +1,7 @@
 defmodule SkyscraperWeb.ElevatorLive do
   use SkyscraperWeb, :live_view
 
+  @impl true
   def render(assigns) do
     ~L"""
       <div class="elevator">
@@ -23,14 +24,12 @@ defmodule SkyscraperWeb.ElevatorLive do
 
   @impl true
   def mount(_, %{"elevator" => elevator}, socket) do
-    # IO.inspect({params, socket})
-
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(
-        SkyscraperOtp.PubSub,
-        "building:#{elevator.building}:#{elevator.id}"
-      )
-    end
+    # if connected?(socket) do
+    #   Phoenix.PubSub.subscribe(
+    #     SkyscraperOtp.PubSub,
+    #     "building:#{elevator.building}:#{elevator.id}"
+    #   )
+    # end
 
     {:ok, socket |> assign(elevator: elevator)}
   end
@@ -39,7 +38,12 @@ defmodule SkyscraperWeb.ElevatorLive do
   def handle_event("elevator_button_push", %{"floor" => floor}, socket) do
     {floor, ""} = Integer.parse(floor)
 
-    SkyscraperOtp.push_elevator_button(socket.assigns.building, socket.elevator.id, floor)
+    SkyscraperOtp.push_elevator_button(
+      socket.assigns.elevator.building,
+      socket.assigns.elevator.id,
+      floor
+    )
+
     {:noreply, socket}
   end
 end

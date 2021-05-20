@@ -18,7 +18,7 @@ defmodule SkyscraperWeb.ConstructLive do
     <hr>
     <div class="elevators">
       <%= for elevator <- @elevators do %>
-        <%= live_render(@socket , SkyscraperWeb.ElevatorLive, id: elevator.id, session: %{"elevator" => elevator}) %>
+        <%= live_render(@socket , SkyscraperWeb.ElevatorLive, id: "elevator-#{elevator.id}", session: %{"elevator" => elevator}) %>
       <% end %>
     </div>
     """
@@ -35,9 +35,9 @@ defmodule SkyscraperWeb.ConstructLive do
 
     socket = socket |> assign(assigns)
 
-    # if connected?(socket) do
-    #   Phoenix.PubSub.subscribe(SkyscraperOtp.PubSub, "building:#{name}")
-    # end
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(SkyscraperOtp.PubSub, "building:#{name}")
+    end
 
     {:ok, socket}
   end
@@ -50,11 +50,7 @@ defmodule SkyscraperWeb.ConstructLive do
     {:noreply, socket}
   end
 
-  def handle_event("elevator_button_push", %{"floor" => floor, "id" => id}, socket) do
-    {floor, ""} = Integer.parse(floor)
-    {id, ""} = Integer.parse(id)
-
-    SkyscraperOtp.push_elevator_button(socket.assigns.building, id, floor)
-    {:noreply, socket}
+  def handle_info({:dispatcher_state_changed, dispatcher}, socket) do
+    {:noreply, socket |> assign(:dispatcher, dispatcher)}
   end
 end
