@@ -1,6 +1,7 @@
 defmodule SkyscraperWeb.ConstructLive do
   use Phoenix.LiveView
 
+  @impl true
   def render(assigns) do
     ~L"""
     <div class="building-container">
@@ -24,6 +25,7 @@ defmodule SkyscraperWeb.ConstructLive do
     """
   end
 
+  @impl true
   def mount(%{"id" => id}, _session, socket) do
     # Refactor to Kernel.then/1 on Elixir 1.12
     name = Skyscraper.Repo.get!(Skyscraper.Buildings.Building, id).name
@@ -42,6 +44,7 @@ defmodule SkyscraperWeb.ConstructLive do
     {:ok, socket}
   end
 
+  @impl true
   def handle_event("hall_button_push", %{"floor" => floor, "direction" => direction}, socket) do
     {floor, ""} = Integer.parse(floor)
     direction = String.to_existing_atom(direction)
@@ -50,6 +53,7 @@ defmodule SkyscraperWeb.ConstructLive do
     {:noreply, socket}
   end
 
+  @impl true
   def handle_info({:dispatcher_state_changed, dispatcher}, socket) do
     {:noreply, socket |> assign(:dispatcher, dispatcher)}
   end

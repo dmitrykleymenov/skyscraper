@@ -24,12 +24,12 @@ defmodule SkyscraperWeb.ElevatorLive do
 
   @impl true
   def mount(_, %{"elevator" => elevator}, socket) do
-    # if connected?(socket) do
-    #   Phoenix.PubSub.subscribe(
-    #     SkyscraperOtp.PubSub,
-    #     "building:#{elevator.building}:#{elevator.id}"
-    #   )
-    # end
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(
+        SkyscraperOtp.PubSub,
+        "building:#{elevator.building}:#{elevator.id}"
+      )
+    end
 
     {:ok, socket |> assign(elevator: elevator)}
   end
@@ -45,5 +45,10 @@ defmodule SkyscraperWeb.ElevatorLive do
     )
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:elevator_state_changed, elevator}, socket) do
+    {:noreply, socket |> assign(:elevator, elevator)}
   end
 end

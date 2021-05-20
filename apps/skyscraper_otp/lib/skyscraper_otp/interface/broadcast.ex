@@ -7,7 +7,7 @@ defmodule SkyscraperOtp.Interface.Broadcast do
     Phoenix.PubSub.broadcast(
       SkyscraperOtp.PubSub,
       "building:#{elevator.building}:#{elevator.id}",
-      {:elevator_state_changed, elevator.id, elevator}
+      {:elevator_state_changed, elevator}
     )
   end
 
