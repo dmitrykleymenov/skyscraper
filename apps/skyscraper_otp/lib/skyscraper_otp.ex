@@ -13,10 +13,18 @@ defmodule SkyscraperOtp do
       building: Keyword.fetch!(arg, :building),
       floors: Keyword.fetch!(arg, :floors_amount) |> floors(),
       elevator_ids: Keyword.fetch!(arg, :elevators_quantity) |> elevator_ids(),
-      interface_mods: Keyword.get(arg, :interface_mods, [Console, Broadcast])
+      interface_mods: Keyword.get(arg, :interface_mods, [Console, Broadcast]),
+      registry: Keyword.get(arg, :registry, SkyscraperOtp.Registry)
     ]
 
     DynamicSupervisor.start_child(BuildingsSupervisor, {BuildingSupervisor, args})
+  end
+
+  def active?(building, registry \\ SkyscraperOtp.Registry) do
+    case registry |> Registry.lookup(BuildingSupervisor.registry_key(building)) do
+      [] -> false
+      _ -> true
+    end
   end
 
   def destroy(building, registry \\ SkyscraperOtp.Registry) do
