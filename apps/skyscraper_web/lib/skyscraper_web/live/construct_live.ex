@@ -8,12 +8,12 @@ defmodule SkyscraperWeb.ConstructLive do
       Building: <%= @dispatcher.building %>
     <div class="dispatcher">
       <%= for {{floor, direction}, active} <- @dispatcher.buttons do %>
-        <button phx-click="hall_button_push"
+        <span phx-click="hall_button_push"
                 phx-value-floor="<%= floor %>"
                 phx-value-direction="<%= direction %>"
                 class="hall-button <%= if active, do: "active" %>">
-          <%= "#{floor} - #{direction}" %>
-      </button>
+          <%= "#{floor}-#{direction}" %>
+      </span>
       <% end %>
     </div>
     <hr>

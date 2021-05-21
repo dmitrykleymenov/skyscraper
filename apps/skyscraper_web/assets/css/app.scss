@@ -88,7 +88,29 @@
   display: block;
   margin: -1rem 0 2rem;
 }
+
+.hall-button{
+  cursor: pointer;
+  border: #1f50bb;
+  border-radius: 10px;
+  border-style:solid;
+  margin-left: 5px;
+  background-color: #fefefe;
+  color: #1f50bb;
+}
+
+.car-button{
+  cursor: pointer;
+  border: #1f50bb;
+  border-radius: 8px;
+  border-style:solid;
+  margin-left: 10px;
+  background-color: #fefefe;
+  color: #1f50bb;
+}
+
 .active {
-  color: #43f53d; 
-  background-color: #fcf8e3
+  color: #fefefe; 
+  background-color: #27df4e;
+  border: #fefefe; 
 }

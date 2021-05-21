@@ -10,11 +10,11 @@ defmodule SkyscraperWeb.ElevatorLive do
         <div class="current-floor"><%= @elevator.current_floor %></div>
         <div class="buttons">
           <%= for {floor, active} <- @elevator.floor_buttons do %>
-            <button phx-click="elevator_button_push"
+            <span phx-click="elevator_button_push"
               phx-value-floor="<%= floor %>"
               class="car-button <%= if active, do: "active" %>">
                 <%= floor %>
-            </button>
+            </span>
           <% end %>
         </div>
         <br><br>
