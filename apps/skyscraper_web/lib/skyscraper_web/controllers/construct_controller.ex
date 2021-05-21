@@ -2,43 +2,25 @@ defmodule SkyscraperWeb.ConstructController do
   use SkyscraperWeb, :controller
 
   def create(conn, user) do
-    building = Skyscraper.Repo.preload(user, :building).building
+    unless SkyscraperOtp.active?(user.building.name) do
+      SkyscraperOtp.build(
+        building: user.building.name,
+        floors_amount: user.building.floors_amount,
+        elevators_quantity: user.building.elevators_quantity
+      )
+    end
 
-    # SkyscraperOtp.build(building: "moscow tower", floors_amount: 50, elevators_quantity: 3)
-
-    SkyscraperOtp.build(
-      building: building.name,
-      floors_amount: building.floors_amount,
-      elevators_quantity: building.elevators_quantity
-    )
-
-    redirect conn, to: Routes.construct_path(conn, :show, id: building.id)
-
-    # case user |> Buildings.create_building(building_params) do
-    #   {:ok, _building} ->
-    #     conn
-    #     |> put_flash(:info, "Building is created.")
-    #     |> redirect(to: Routes.building_path(conn, :edit))
-
-    #   {:error, %Ecto.Changeset{} = changeset} ->
-    #     render(conn, "edit.html", changeset: changeset)
-    # end
+    redirect(conn, to: Routes.live_path(conn, SkyscraperWeb.ConstructLive, user.building))
   end
 
-  def update(conn, %{"building" => building_params}, user) do
-    case user |> Buildings.update_building(building_params) do
-      {:ok, _building} ->
-        conn
-        |> put_flash(:info, "Building is updated successfully.")
-        |> redirect(to: Routes.building_path(conn, :edit))
+  def destroy(conn, user) do
+    if SkyscraperOtp.active?(user.building.name), do: SkyscraperOtp.destroy(user.building.name)
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        render(conn, "edit.html", changeset: changeset)
-    end
+    redirect(conn, to: Routes.page_path(conn, :index))
   end
 
   def action(conn, _) do
-    args = [conn, Pow.Plug.current_user(conn)]
+    args = [conn, conn.assigns.current_user]
     apply(__MODULE__, action_name(conn), args)
   end
 end

@@ -10,6 +10,7 @@ defmodule SkyscraperWeb.Router do
     plug :put_root_layout, {SkyscraperWeb.LayoutView, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug :set_current_user
   end
 
   pipeline :api do
@@ -38,7 +39,6 @@ defmodule SkyscraperWeb.Router do
   scope "/", SkyscraperWeb do
     pipe_through([:browser, :protected])
 
-    get("/", PageController, :index)
     get("/building", BuildingController, :edit)
     post("/building", BuildingController, :create)
     put("/building", BuildingController, :update)
@@ -65,6 +65,13 @@ defmodule SkyscraperWeb.Router do
     scope "/" do
       pipe_through :browser
       live_dashboard "/dashboard", metrics: SkyscraperWeb.Telemetry
+    end
+  end
+
+  def set_current_user(conn, _params) do
+    case Pow.Plug.current_user(conn) do
+      nil -> conn
+      user -> conn |> assign(:current_user, user |> Skyscraper.Repo.preload(:building))
     end
   end
 end

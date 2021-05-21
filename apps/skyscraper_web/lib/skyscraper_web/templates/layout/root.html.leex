@@ -14,9 +14,17 @@
       <section class="container">
         <nav role="navigation">
           <ul>
-            <%= if Pow.Plug.current_user(@conn) do %>
+            <%= if @current_user do %>
               <li><%= link "Sign out", to: Routes.pow_session_path(@conn, :delete), method: :delete %></li>
               <li><%= link "Manage building", to: Routes.building_path(@conn, :edit)%></li>
+              <%= if @current_user.building do %>
+                <%= if skyscraper_active?(@current_user.building) do %>
+                  <li><%= link "show elevators", to: Routes.live_path(@conn, SkyscraperWeb.ConstructLive, @current_user.building) %></li>
+                  <li><%= link "stop elevators ", to: Routes.construct_path(@conn, :destroy), method: :delete %></li>
+                <% else %>
+                  <li><%= link "start elevators ", to: Routes.construct_path(@conn, :create), method: :post %></li>
+                <% end %>
+              <% end %>
             <% else %>
               <li><%= link "Register", to: Routes.pow_registration_path(@conn, :new) %></li>
               <li><%= link "Sign in", to: Routes.pow_session_path(@conn, :new) %></li>

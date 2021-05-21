@@ -32,7 +32,7 @@ defmodule SkyscraperWeb.BuildingController do
   end
 
   def action(conn, _) do
-    args = [conn, conn.params, Pow.Plug.current_user(conn)]
+    args = [conn, conn.params, conn.assigns.current_user]
     apply(__MODULE__, action_name(conn), args)
   end
 end
