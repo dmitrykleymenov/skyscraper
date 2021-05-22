@@ -22,7 +22,7 @@ defmodule SkyscraperOtp do
     Phoenix.PubSub.broadcast(
       SkyscraperOtp.PubSub,
       "skyscrapers",
-      {:built, building}
+      {:skyscraper_built, building}
     )
 
     DynamicSupervisor.start_child(BuildingsSupervisor, {BuildingSupervisor, args})
@@ -45,7 +45,7 @@ defmodule SkyscraperOtp do
     Phoenix.PubSub.broadcast(
       SkyscraperOtp.PubSub,
       "skyscrapers",
-      {:destroyed, building}
+      {:skyscraper_destroyed, building}
     )
 
     DynamicSupervisor.terminate_child(BuildingsSupervisor, pid)

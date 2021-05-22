@@ -27,12 +27,12 @@ defmodule SkyscraperWeb.PageLive do
   end
 
   @impl true
-  def handle_info({:built, skyscraper}, socket) do
+  def handle_info({:skyscraper_built, skyscraper}, socket) do
     {:noreply, socket |> assign(:skyscrapers, [skyscraper | socket.assigns.skyscrapers])}
   end
 
   @impl true
-  def handle_info({:destroyed, skyscraper}, socket) do
+  def handle_info({:skyscraper_destroyed, skyscraper}, socket) do
     skyscrapers =
       socket.assigns.skyscrapers
       |> Enum.reject(fn s -> s == skyscraper end)

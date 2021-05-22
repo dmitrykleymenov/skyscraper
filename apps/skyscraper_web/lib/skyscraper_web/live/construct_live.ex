@@ -1,5 +1,5 @@
 defmodule SkyscraperWeb.ConstructLive do
-  use Phoenix.LiveView
+  use SkyscraperWeb, :live_view
 
   @impl true
   def render(assigns) do
@@ -36,6 +36,7 @@ defmodule SkyscraperWeb.ConstructLive do
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(SkyscraperOtp.PubSub, "building:#{name}")
+      Phoenix.PubSub.subscribe(SkyscraperOtp.PubSub, "skyscrapers")
     end
 
     {:ok, socket}
@@ -53,5 +54,23 @@ defmodule SkyscraperWeb.ConstructLive do
   @impl true
   def handle_info({:dispatcher_state_changed, dispatcher}, socket) do
     {:noreply, socket |> assign(:dispatcher, dispatcher)}
+  end
+
+  @impl true
+  def handle_info({:skyscraper_built, _skyscraper}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(
+        {:skyscraper_destroyed, skyscraper},
+        %{assigns: %{building: skyscraper}} = socket
+      ) do
+    {:noreply, socket |> push_redirect(to: Routes.page_path(socket, :index))}
+  end
+
+  @impl true
+  def handle_info({:skyscraper_destroyed, _skyscraper}, socket) do
+    {:noreply, socket}
   end
 end
