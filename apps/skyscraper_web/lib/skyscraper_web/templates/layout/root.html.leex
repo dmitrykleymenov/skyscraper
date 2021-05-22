@@ -19,7 +19,7 @@
               <li><%= link "Manage building", to: Routes.building_path(@conn, :edit)%></li>
               <%= if @current_user.building do %>
                 <%= if skyscraper_active?(@current_user.building) do %>
-                  <li><%= link "Show elevators", to: Routes.live_path(@conn, SkyscraperWeb.ConstructLive, @current_user.building) %></li>
+                  <li><%= link @current_user.building.name, to: Routes.live_path(@conn, SkyscraperWeb.ConstructLive, @current_user.building.name) %></li>
                   <li><%= link "Stop elevators ", to: Routes.construct_path(@conn, :destroy), method: :delete %></li>
                 <% else %>
                   <li><%= link "Start elevators ", to: Routes.construct_path(@conn, :create), method: :post %></li>

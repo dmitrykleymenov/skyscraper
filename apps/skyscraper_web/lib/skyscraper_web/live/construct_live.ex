@@ -26,10 +26,7 @@ defmodule SkyscraperWeb.ConstructLive do
   end
 
   @impl true
-  def mount(%{"id" => id}, _session, socket) do
-    # Refactor to Kernel.then/1 on Elixir 1.12
-    name = Skyscraper.Repo.get!(Skyscraper.Buildings.Building, id).name
-
+  def mount(%{"id" => name}, _session, socket) do
     assigns =
       name
       |> SkyscraperOtp.get_state()
