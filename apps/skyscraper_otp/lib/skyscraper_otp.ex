@@ -9,13 +9,21 @@ defmodule SkyscraperOtp do
   """
 
   def build(arg) do
+    building = Keyword.fetch!(arg, :building)
+
     args = [
-      building: Keyword.fetch!(arg, :building),
+      building: building,
       floors: Keyword.fetch!(arg, :floors_amount) |> floors(),
       elevator_ids: Keyword.fetch!(arg, :elevators_quantity) |> elevator_ids(),
       interface_mods: Keyword.get(arg, :interface_mods, [Console, Broadcast]),
       registry: Keyword.get(arg, :registry, SkyscraperOtp.Registry)
     ]
+
+    Phoenix.PubSub.broadcast(
+      SkyscraperOtp.PubSub,
+      "skyscrapers",
+      {:built, building}
+    )
 
     DynamicSupervisor.start_child(BuildingsSupervisor, {BuildingSupervisor, args})
   end
@@ -27,8 +35,18 @@ defmodule SkyscraperOtp do
     end
   end
 
+  def list(registry \\ SkyscraperOtp.Registry) do
+    Registry.select(registry, [{{{SkyscraperOtp.BuildingSupervisor, :"$1"}, :_, :_}, [], [:"$1"]}])
+  end
+
   def destroy(building, registry \\ SkyscraperOtp.Registry) do
     [{pid, _}] = Registry.lookup(registry, BuildingSupervisor.registry_key(building))
+
+    Phoenix.PubSub.broadcast(
+      SkyscraperOtp.PubSub,
+      "skyscrapers",
+      {:destroyed, building}
+    )
 
     DynamicSupervisor.terminate_child(BuildingsSupervisor, pid)
   end

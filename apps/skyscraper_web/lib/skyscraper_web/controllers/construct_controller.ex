@@ -10,7 +10,7 @@ defmodule SkyscraperWeb.ConstructController do
       )
     end
 
-    redirect(conn, to: Routes.live_path(conn, SkyscraperWeb.ConstructLive, user.building))
+    redirect(conn, to: Routes.live_path(conn, SkyscraperWeb.ConstructLive, user.building.name))
   end
 
   def destroy(conn, user) do

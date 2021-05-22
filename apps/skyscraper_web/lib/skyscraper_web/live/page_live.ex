@@ -2,38 +2,41 @@ defmodule SkyscraperWeb.PageLive do
   use SkyscraperWeb, :live_view
 
   @impl true
+  def render(assigns) do
+    ~L"""
+    <div class="skyscrapers-container">
+
+      <%= if @skyscrapers |> Enum.empty?() do %>
+        Currently no active elevators
+      <% else %>
+        <%= for skyscraper <- @skyscrapers do %>
+          <div class="skyscraper">
+            <%= link skyscraper, to: Routes.live_path(@socket, SkyscraperWeb.ConstructLive, skyscraper) %>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+    """
+  end
+
+  @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, query: "", results: %{})}
+    Phoenix.PubSub.subscribe(SkyscraperOtp.PubSub, "skyscrapers")
+
+    {:ok, assign(socket, skyscrapers: SkyscraperOtp.list())}
   end
 
   @impl true
-  def handle_event("suggest", %{"q" => query}, socket) do
-    {:noreply, assign(socket, results: search(query), query: query)}
+  def handle_info({:built, skyscraper}, socket) do
+    {:noreply, socket |> assign(:skyscrapers, [skyscraper | socket.assigns.skyscrapers])}
   end
 
   @impl true
-  def handle_event("search", %{"q" => query}, socket) do
-    case search(query) do
-      %{^query => vsn} ->
-        {:noreply, redirect(socket, external: "https://hexdocs.pm/#{query}/#{vsn}")}
+  def handle_info({:destroyed, skyscraper}, socket) do
+    skyscrapers =
+      socket.assigns.skyscrapers
+      |> Enum.reject(fn s -> s == skyscraper end)
 
-      _ ->
-        {:noreply,
-         socket
-         |> put_flash(:error, "No dependencies found matching \"#{query}\"")
-         |> assign(results: %{}, query: query)}
-    end
-  end
-
-  defp search(query) do
-    if not SkyscraperWeb.Endpoint.config(:code_reloader) do
-      raise "action disabled when not in development"
-    end
-
-    for {app, desc, vsn} <- Application.started_applications(),
-        app = to_string(app),
-        String.starts_with?(app, query) and not List.starts_with?(desc, ~c"ERTS"),
-        into: %{},
-        do: {app, vsn}
+    {:noreply, socket |> assign(:skyscrapers, skyscrapers)}
   end
 end
