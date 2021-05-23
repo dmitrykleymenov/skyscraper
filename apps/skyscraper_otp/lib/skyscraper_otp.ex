@@ -36,7 +36,7 @@ defmodule SkyscraperOtp do
   end
 
   def list(registry \\ SkyscraperOtp.Registry) do
-    Registry.select(registry, [{{{SkyscraperOtp.BuildingSupervisor, :"$1"}, :_, :_}, [], [:"$1"]}])
+    Registry.select(registry, [{{{BuildingSupervisor, :"$1"}, :_, :_}, [], [:"$1"]}])
   end
 
   def destroy(building, registry \\ SkyscraperOtp.Registry) do
