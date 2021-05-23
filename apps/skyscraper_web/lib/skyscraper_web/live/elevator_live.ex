@@ -1,5 +1,6 @@
 defmodule SkyscraperWeb.ElevatorLive do
   use SkyscraperWeb, :live_view
+  alias SkyscraperOtp.Cleaner
 
   @impl true
   def render(assigns) do
@@ -49,6 +50,7 @@ defmodule SkyscraperWeb.ElevatorLive do
 
   @impl true
   def handle_info({:elevator_state_changed, elevator}, socket) do
+    Cleaner.touch(building: elevator.building)
     {:noreply, socket |> assign(:elevator, elevator)}
   end
 end
