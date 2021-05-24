@@ -3,7 +3,7 @@ defmodule SkyscraperOtp.Elevator.Queue do
   defstruct [:down_queue, :up_queue]
 
   @doc """
-    builds a `queue` struct
+    builds an empty `queue` struct
   """
 
   def build() do
@@ -38,7 +38,6 @@ defmodule SkyscraperOtp.Elevator.Queue do
   @doc """
     Returns next destination and the remained queue for given `queue`
   """
-
   def pop(queue, :up) do
     case {Prioqueue.empty?(queue.up_queue), Prioqueue.empty?(queue.down_queue)} do
       {false, _} ->
@@ -68,7 +67,7 @@ defmodule SkyscraperOtp.Elevator.Queue do
   end
 
   @doc """
-    returns all requests in queue
+    Returns all requests in queue
   """
   def list(%Queue{down_queue: down_queue, up_queue: up_queue}) do
     Prioqueue.to_list(down_queue) ++ Prioqueue.to_list(up_queue)
