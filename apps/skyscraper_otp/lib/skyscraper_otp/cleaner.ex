@@ -3,13 +3,17 @@ defmodule SkyscraperOtp.Cleaner do
   @max_idle_seconds 10 * 60
   @period 10_000
   @moduledoc """
-  Clener contains logic for destroying abandoned skyscrapers
+    Clener contains logic for destroying abandoned skyscrapers
   """
 
+  @doc false
   def start_link(arg) do
     GenServer.start_link(__MODULE__, arg, name: __MODULE__)
   end
 
+  @doc """
+    Renews last building action time to `now`
+  """
   def touch(arg) do
     building = Keyword.fetch!(arg, :building)
     registry = Keyword.get(arg, :registry, SkyscraperOtp.Registry)
@@ -18,6 +22,9 @@ defmodule SkyscraperOtp.Cleaner do
     GenServer.cast(__MODULE__, {:touch, {building, registry}, max_idle_seconds})
   end
 
+  @doc """
+    Calls `SkyScraper.destroy` with `building`
+  """
   def destroy(building, registry \\ SkyscraperOtp.Registry) do
     GenServer.cast(__MODULE__, {:destroy, building, registry})
   end

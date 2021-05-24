@@ -38,7 +38,7 @@ defmodule SkyscraperOtp.Elevator.Server do
   end
 
   @doc """
-    Cancels outer `dest` request in elevator with `id` from `buiding`
+    Cancels outer `dest` request in elevator with `id` from `building`
   """
   def cancel_request(building, id, dest, registry \\ SkyscraperOtp.Registry) do
     name(building, id, registry)

@@ -8,7 +8,7 @@ defmodule SkyscraperOtp.Elevator.Display do
   """
 
   @doc """
-    Builds a `Display` struct for `elevator` with `id` from `buiding`
+    Builds a `Display` struct for `elevator` with `id` from `building`
   """
   def build(building, id, elevator) do
     %Display{

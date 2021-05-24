@@ -2,25 +2,38 @@ defmodule SkyscraperOtp.Cache do
   use GenServer
 
   @moduledoc """
-    Caches dispatcher and elevators state for buildings
+    Caches dispatcher state and elevator states for buildings
   """
 
+  @doc false
   def start_link(_arg) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
+  @doc """
+    Sets cache for dispatcher from `building` to `dispatcher`
+  """
   def update_dispatcher(building, dispatcher) do
     GenServer.cast(__MODULE__, {:update_dispatcher, building, dispatcher})
   end
 
+  @doc """
+    Sets cache for elevator with `id` from `building` to `elevator`
+  """
   def update_elevator(building, id, elevator) do
     GenServer.cast(__MODULE__, {:update_elevator, building, id, elevator})
   end
 
+  @doc """
+    Clears cache for elevators and dispatcher from `building`
+  """
   def clear_building(building) do
     GenServer.cast(__MODULE__, {:clear_buillding, building})
   end
 
+  @doc """
+    Fetches cached dispatcher state from `building`
+  """
   def get_dispatcher(building) do
     case :ets.lookup(:dispatchers, building) do
       [] -> nil
@@ -28,6 +41,9 @@ defmodule SkyscraperOtp.Cache do
     end
   end
 
+  @doc """
+    Fetches cached state for elevator with `id` from `building`
+  """
   def get_elevator(building, id) do
     case :ets.lookup(:elevators, {building, id}) do
       [] -> nil

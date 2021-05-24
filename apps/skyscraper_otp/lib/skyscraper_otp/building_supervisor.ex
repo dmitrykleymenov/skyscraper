@@ -4,7 +4,7 @@ defmodule SkyscraperOtp.BuildingSupervisor do
   alias SkyscraperOtp.Elevator.Server, as: Elevator
 
   @moduledoc """
-    Root supervisor for whole new buidings dispatcher and elevators
+    Root supervisor for whole new buildings dispatcher and elevators
   """
 
   @doc false
@@ -18,7 +18,7 @@ defmodule SkyscraperOtp.BuildingSupervisor do
   end
 
   @doc """
-    Returns registry key for supervisor with name `buiding`
+    Returns registry key for supervisor with name `building`
   """
   def registry_key(building) do
     {__MODULE__, building}
