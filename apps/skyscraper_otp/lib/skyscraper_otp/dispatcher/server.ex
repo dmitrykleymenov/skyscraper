@@ -5,48 +5,72 @@ defmodule SkyscraperOtp.Dispatcher.Server do
   require IEx
   use GenServer
 
+  @moduledoc """
+   Provides statefull and OTP related abstraction for `Dispatcher` logic
+  """
+
+  @doc false
   def start_link(arg) do
     registry = Keyword.get(arg, :registry, SkyscraperOtp.Registry)
 
     GenServer.start_link(__MODULE__, arg, name: Keyword.fetch!(arg, :building) |> name(registry))
   end
 
+  @doc """
+    Tells dispatcher with given `id` about pushed  hall `button`
+  """
   def push_button(id, button, registry \\ SkyscraperOtp.Registry) do
     id
     |> name(registry)
     |> GenServer.cast({:push_button, button})
   end
 
+  @doc """
+    Sets destination info to `dest_info` for elevator with `el_id` from building with `id`
+  """
   def set_time_to_destination(id, el_id, dest_info, registry \\ SkyscraperOtp.Registry) do
     id
     |> name(registry)
     |> GenServer.call({:set_time_to_destination, el_id, dest_info})
   end
 
+  @doc """
+    Tells dispatcher that elevator with `el_id` from building with `id` reached the `destination`
+  """
   def notify_destination_reached(id, el_id, destination, registry \\ SkyscraperOtp.Registry) do
     id
     |> name(registry)
     |> GenServer.cast({:request_handled, el_id, destination})
   end
 
+  @doc """
+    Tells dispatcher that elevator with `el_id` from building with `id` changes its destination
+  """
   def notify_new_destination(id, elevator_id, registry \\ SkyscraperOtp.Registry) do
     id
     |> name(registry)
     |> GenServer.cast({:elevator_changed_destination, elevator_id})
   end
 
+  @doc """
+    Returns elevator ids for buillding with `id`
+  """
   def get_elevator_ids(id, registry) do
     id
     |> name(registry)
     |> GenServer.call(:get_elevator_ids)
   end
 
+  @doc """
+    Returns current `Dispatcher` state
+  """
   def get_state(id, registry) do
     id
     |> name(registry)
     |> GenServer.call(:get_state)
   end
 
+  @impl true
   def init(args) do
     building = Keyword.fetch!(args, :building)
 
@@ -58,6 +82,7 @@ defmodule SkyscraperOtp.Dispatcher.Server do
      }}
   end
 
+  @impl true
   def handle_cast({:push_button, button}, state) do
     # TODO: refactor to macros, since we should ask if button active and processible, before ask elevators about handle time
     state =
@@ -76,6 +101,7 @@ defmodule SkyscraperOtp.Dispatcher.Server do
     {:noreply, state}
   end
 
+  @impl true
   def handle_cast({:elevator_changed_destination, el_id}, state) do
     state =
       state.dispatcher
@@ -85,6 +111,7 @@ defmodule SkyscraperOtp.Dispatcher.Server do
     {:noreply, state}
   end
 
+  @impl true
   def handle_cast({:request_handled, el_id, destination}, state) do
     state =
       state
@@ -94,6 +121,7 @@ defmodule SkyscraperOtp.Dispatcher.Server do
     {:noreply, state}
   end
 
+  @impl true
   def handle_call({:set_time_to_destination, el_id, dest_info}, _caller, state) do
     state =
       state.dispatcher
@@ -103,17 +131,17 @@ defmodule SkyscraperOtp.Dispatcher.Server do
     {:reply, :ok, state}
   end
 
+  @impl true
   def handle_call(:get_elevator_ids, _caller, state) do
     {:reply, state.dispatcher |> Dispatcher.elevator_ids(), state}
   end
 
+  @impl true
   def handle_call(:get_state, _caller, state) do
     {:reply, Display.build(state.building, state.dispatcher), state}
   end
 
   defp elevators_handle_time(building, dispatcher, button) do
-    # IEx.pry()
-
     dispatcher
     |> Dispatcher.elevator_ids()
     |> Enum.map(fn el_id ->
