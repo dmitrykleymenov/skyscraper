@@ -2,6 +2,13 @@ defmodule SkyscraperOtp.Dispatcher do
   alias SkyscraperOtp.Dispatcher
   defstruct [:queue, :elevators, :instructions, :buttons]
 
+  @moduledoc """
+    Includes whole inner logic for dispatcher
+  """
+
+  @doc """
+    Builds a dispatcher struct from `arg`
+  """
   def build(args) do
     %Dispatcher{
       elevators: Keyword.fetch!(args, :elevator_ids) |> map_elevators(),
@@ -15,21 +22,39 @@ defmodule SkyscraperOtp.Dispatcher do
     }
   end
 
+  @doc """
+    Answers if `button` is marked as pushed in `dispatcher`
+  """
   def button_active?(%Dispatcher{queue: queue}, button), do: button in queue
 
+  @doc """
+    Returns all pushed buttons for `dispatcher`
+  """
   def active_buttons(%Dispatcher{queue: queue}), do: queue
 
+  @doc """
+    Returns all possible buttons to push from `dispatcher`
+  """
   def available_buttons(%Dispatcher{buttons: buttons}), do: buttons
 
-  def push_button(%Dispatcher{} = disp, button, elevators_handle_time) do
-    disp
-    |> Map.put(:queue, [button | disp.queue])
+  @doc """
+    Tells `dispatcher` about pushed `button` and `elevators_handle_time` for that possible request
+  """
+  def push_button(%Dispatcher{} = dispatcher, button, elevators_handle_time) do
+    dispatcher
+    |> Map.put(:queue, [button | dispatcher.queue])
     |> add_proposal_instruction(optimal_elevator(elevators_handle_time), [button])
     |> extract_instructions()
   end
 
+  @doc """
+    Returns all elevator ids for `dispatcher`
+  """
   def elevator_ids(%Dispatcher{elevators: elevators}), do: elevators |> Map.keys()
 
+  @doc """
+    Sets `dest_info` as handling request for `el_id`
+  """
   def set_time_to_destination(%Dispatcher{} = dispatcher, el_id, {dest, new_time} = dest_info) do
     dispatcher.elevators
     |> Enum.reduce(dispatcher, fn
@@ -48,12 +73,18 @@ defmodule SkyscraperOtp.Dispatcher do
     |> extract_instructions()
   end
 
+  @doc """
+    Tells `dispatcher` about handled `button` request by elevator with `el_id`
+  """
   def request_handled(%Dispatcher{} = dispatcher, el_id, button) do
     dispatcher
     |> Map.put(:queue, dispatcher.queue |> List.delete(button))
     |> Map.put(:elevators, dispatcher.elevators |> Map.put(el_id, nil))
   end
 
+  @doc """
+    Propose all pending in `dispatcher` requests to elevator with `el_id`
+  """
   def propose_requests(%Dispatcher{} = dispatcher, el_id) do
     dispatcher |> add_proposal_instruction(el_id, dispatcher.queue) |> extract_instructions()
   end

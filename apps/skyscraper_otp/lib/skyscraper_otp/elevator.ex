@@ -3,6 +3,10 @@ defmodule SkyscraperOtp.Elevator do
   alias SkyscraperOtp.Elevator.Queue
   @default_step_duration 1000
 
+  @moduledoc """
+    Includes whole inner logic for elevator
+  """
+
   defstruct [
     :queue,
     :acceptable_floors,
@@ -18,19 +22,21 @@ defmodule SkyscraperOtp.Elevator do
   defguardp is_open_doors(step) when step in ~w(opening_doors doors_open)a
 
   @doc """
-    Builds a elevator struct
+    Builds an elevator struct from `arg`
   """
-
-  def build(opts \\ []) do
+  def build(arg \\ []) do
     %Elevator{
       queue: Queue.build(),
-      acceptable_floors: Keyword.get(opts, :floors, 1..50 |> Enum.to_list()),
-      current_floor: Keyword.get(opts, :current_floor, 1),
-      step_durations: Keyword.get(opts, :step_durations, %{})
+      acceptable_floors: Keyword.get(arg, :floors, 1..50 |> Enum.to_list()),
+      current_floor: Keyword.get(arg, :current_floor, 1),
+      step_durations: Keyword.get(arg, :step_durations, %{})
     }
     |> extract_instructions()
   end
 
+  @doc """
+    Restores and returns elevator from cached `elevator`
+  """
   def recover(%Elevator{step: :idling} = elevator), do: elevator |> extract_instructions()
 
   def recover(%Elevator{} = elevator) do
@@ -42,7 +48,6 @@ defmodule SkyscraperOtp.Elevator do
   @doc """
     Completes current step
   """
-
   def complete_step(%Elevator{} = elevator) do
     elevator
     |> process()
@@ -51,9 +56,8 @@ defmodule SkyscraperOtp.Elevator do
   end
 
   @doc """
-    Add a new destination floor by using inside-cabin interface
+    Tells `elevator` about pushed `floor` button
   """
-
   def push_button(%Elevator{} = elevator, floor) do
     if floor in elevator.acceptable_floors do
       {elevator.step, elevator.destination, elevator.current_floor,
@@ -68,7 +72,6 @@ defmodule SkyscraperOtp.Elevator do
   @doc """
     Returns current step duration
   """
-
   def step_duration(%Elevator{step_durations: durations} = elevator) do
     durations |> Map.get(elevator |> step(), @default_step_duration)
   end
@@ -104,7 +107,6 @@ defmodule SkyscraperOtp.Elevator do
   @doc """
     Calculates delta of handling current destination directly from handling current destination through `new_dest` for `elevator`
   """
-
   def additional_handling_time(%Elevator{} = elevator, new_dest) do
     processing_time(elevator |> inject_destination(new_dest, true)) - processing_time(elevator)
   end
@@ -149,7 +151,6 @@ defmodule SkyscraperOtp.Elevator do
   @doc """
     Proposes `elevator` to change destination to one from `buttons` list
   """
-
   def propose(%Elevator{} = elevator, buttons) do
     buttons
     |> Enum.reduce(elevator, fn {button, time}, el ->
@@ -164,6 +165,9 @@ defmodule SkyscraperOtp.Elevator do
     |> extract_instructions()
   end
 
+  @doc """
+    Cancels current outer request
+  """
   def cancel_request(%Elevator{destination: dest, outer_request: true} = elevator, dest) do
     elevator
     |> cancel_destination()

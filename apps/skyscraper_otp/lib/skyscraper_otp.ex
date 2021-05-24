@@ -5,9 +5,12 @@ defmodule SkyscraperOtp do
   alias SkyscraperOtp.{BuildingsSupervisor, BuildingSupervisor}
 
   @moduledoc """
-    SkyscraperOtp keeps whole OTP related logic for elevators and dispatcher
+    SkyscraperOtp keeps whole OTP related API for elevators and dispatchers
   """
 
+  @doc """
+    Builds a new buiding from `arg`
+  """
   def build(arg) do
     building = Keyword.fetch!(arg, :building)
 
@@ -28,6 +31,9 @@ defmodule SkyscraperOtp do
     DynamicSupervisor.start_child(BuildingsSupervisor, {BuildingSupervisor, args})
   end
 
+  @doc """
+    Answers if skyscraper with name `building` is active
+  """
   def active?(building, registry \\ SkyscraperOtp.Registry) do
     case registry |> Registry.lookup(BuildingSupervisor.registry_key(building)) do
       [] -> false
@@ -35,10 +41,16 @@ defmodule SkyscraperOtp do
     end
   end
 
+  @doc """
+    Returns all active skyscraper names
+  """
   def list(registry \\ SkyscraperOtp.Registry) do
     Registry.select(registry, [{{{BuildingSupervisor, :"$1"}, :_, :_}, [], [:"$1"]}])
   end
 
+  @doc """
+    Destroys skyscraper with name `building`
+  """
   def destroy(building, registry \\ SkyscraperOtp.Registry) do
     [{pid, _}] = Registry.lookup(registry, BuildingSupervisor.registry_key(building))
 
@@ -51,6 +63,9 @@ defmodule SkyscraperOtp do
     DynamicSupervisor.terminate_child(BuildingsSupervisor, pid)
   end
 
+  @doc """
+    Returns the whole skyscraper state
+  """
   def get_state(building, registry \\ SkyscraperOtp.Registry) do
     dispatcher_state = building |> Dispatcher.get_state(registry)
 
@@ -65,10 +80,16 @@ defmodule SkyscraperOtp do
     }
   end
 
+  @doc """
+    Imulates pushing `floor` button inside elevator with `elevator_id` from skyscraper with name `building`
+  """
   def push_elevator_button(building, elevator_id, floor) do
     Elevator.push_button(building, elevator_id, floor)
   end
 
+  @doc """
+    Imulates pushing hall `button` inside skyscraper with name `building`
+  """
   def push_hall_button(building, button) do
     Dispatcher.push_button(building, button)
   end
