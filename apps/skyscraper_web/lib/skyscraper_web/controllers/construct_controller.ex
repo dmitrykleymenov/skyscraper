@@ -1,5 +1,4 @@
 defmodule SkyscraperWeb.ConstructController do
-  alias SkyscraperOtp.Cleaner
   use SkyscraperWeb, :controller
 
   def create(conn, user) do
@@ -11,13 +10,18 @@ defmodule SkyscraperWeb.ConstructController do
       )
     end
 
-    Cleaner.touch(building: user.building.name)
+    SkyscraperOtp.Cleaner.touch(building: user.building.name)
 
     redirect(conn, to: Routes.live_path(conn, SkyscraperWeb.ConstructLive, user.building.name))
   end
 
   def destroy(conn, user) do
-    if SkyscraperOtp.active?(user.building.name), do: Cleaner.destroy(user.building.name)
+    building = user.building.name
+
+    if SkyscraperOtp.active?(building) do
+      SkyscraperOtp.Cleaner.destroy(building)
+      building |> SkyscraperOtp.Cache.clear_building()
+    end
 
     redirect(conn, to: Routes.page_path(conn, :index))
   end
