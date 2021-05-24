@@ -3,6 +3,11 @@ defmodule SkyscraperOtp.BuildingSupervisor do
   alias SkyscraperOtp.Dispatcher.Server, as: Dispatcher
   alias SkyscraperOtp.Elevator.Server, as: Elevator
 
+  @moduledoc """
+    Root supervisor for whole new buidings dispatcher and elevators
+  """
+
+  @doc false
   def start_link(arg) do
     building = Keyword.fetch!(arg, :building)
     registry = Keyword.get(arg, :registry, SkyscraperOtp.Registry)
@@ -12,10 +17,14 @@ defmodule SkyscraperOtp.BuildingSupervisor do
     )
   end
 
+  @doc """
+    Returns registry key for supervisor with name `buiding`
+  """
   def registry_key(building) do
     {__MODULE__, building}
   end
 
+  @impl true
   def init(arg) do
     children = [
       {Dispatcher, arg},

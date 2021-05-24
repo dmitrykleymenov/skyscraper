@@ -2,6 +2,10 @@ defmodule SkyscraperOtp.Interface.Broadcast do
   alias SkyscraperOtp.Interface
   @behaviour Interface
 
+  @moduledoc """
+    Implementation for `Interface` behaviour to broadcast ellevator state and dispatcher state changes
+  """
+
   @impl Interface
   def elevator_state_changed(elevator) do
     Phoenix.PubSub.broadcast(

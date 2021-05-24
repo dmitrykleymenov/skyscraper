@@ -2,6 +2,10 @@ defmodule SkyscraperOtp.Interface.Console do
   alias SkyscraperOtp.Interface
   @behaviour Interface
 
+  @moduledoc """
+    Implementation for `Interface` behaviour to show ellevator state and dispatcher state changes in console
+  """
+
   @impl Interface
   def elevator_state_changed(elevator) do
     elevator
@@ -17,9 +21,9 @@ defmodule SkyscraperOtp.Interface.Console do
   end
 
   defp format_elevator_status(elevator) do
-    "Elevator ##{elevator.id} from #{elevator.building} currently on the #{
-      elevator.current_floor
-    } floor and #{elevator.status}. #{elevator.floor_buttons |> show_elevator_buttons()}"
+    "Elevator ##{elevator.id} from #{elevator.building} currently on the #{elevator.current_floor} floor and #{
+      elevator.status
+    }. #{elevator.floor_buttons |> show_elevator_buttons()}"
   end
 
   defp format_dispatcher_status(dispatcher) do
