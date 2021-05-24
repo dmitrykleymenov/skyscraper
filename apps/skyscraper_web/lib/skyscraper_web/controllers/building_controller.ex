@@ -22,6 +22,9 @@ defmodule SkyscraperWeb.BuildingController do
   def update(conn, %{"building" => building_params}, user) do
     case user |> Buildings.update_building(building_params) do
       {:ok, _building} ->
+        user.building.name |> SkyscraperOtp.destroy()
+        user.building.name |> SkyscraperOtp.Cache.clear_building()
+
         conn
         |> put_flash(:info, "Building is updated successfully.")
         |> redirect(to: Routes.building_path(conn, :edit))
