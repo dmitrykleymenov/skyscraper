@@ -3,7 +3,7 @@ defmodule SkyscraperOtp.Elevator.Server do
   require IEx
   alias SkyscraperOtp.Dispatcher.Server, as: Dispatcher
   alias SkyscraperOtp.Elevator.Display
-  alias SkyscraperOtp.{Elevator, Interface}
+  alias SkyscraperOtp.{Elevator, Interface, Cache}
 
   def start_link(arg) do
     GenServer.start_link(__MODULE__, arg, name: name_from_arg(arg))
@@ -40,11 +40,14 @@ defmodule SkyscraperOtp.Elevator.Server do
 
   @impl GenServer
   def init(arg) do
+    building = Keyword.fetch!(arg, :building)
+    id = Keyword.fetch!(arg, :id)
+
     {:ok,
      %{
-       elevator: Elevator.build(arg),
-       building: Keyword.fetch!(arg, :building),
-       id: Keyword.fetch!(arg, :id),
+       elevator: Cache.get_elevator(building, id) || Elevator.build(arg),
+       building: building,
+       id: id,
        interface_mods: Keyword.fetch!(arg, :interface_mods)
      }}
   end
@@ -97,6 +100,7 @@ defmodule SkyscraperOtp.Elevator.Server do
 
   defp process_new_state({instructions, elevator}, state) do
     Enum.each(instructions, &run_instruction(&1, elevator, state))
+    Cache.update_elevator(state.building, state.id, elevator)
 
     %{state | elevator: elevator}
   end

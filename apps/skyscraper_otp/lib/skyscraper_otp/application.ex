@@ -11,7 +11,8 @@ defmodule SkyscraperOtp.Application do
       {DynamicSupervisor, name: SkyscraperOtp.BuildingsSupervisor, strategy: :one_for_one},
       {Task.Supervisor, name: SkyscraperOtp.TaskSupervisor},
       {Phoenix.PubSub, name: SkyscraperOtp.PubSub},
-      SkyscraperOtp.Cleaner
+      SkyscraperOtp.Cleaner,
+      SkyscraperOtp.Cache
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: SkyscraperOtp.Supervisor)

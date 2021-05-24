@@ -1,6 +1,6 @@
 defmodule SkyscraperOtp.Dispatcher.Server do
   alias SkyscraperOtp.Elevator.Server, as: Elevator
-  alias SkyscraperOtp.{Dispatcher, Interface}
+  alias SkyscraperOtp.{Dispatcher, Interface, Cache}
   alias SkyscraperOtp.Dispatcher.Display
   require IEx
   use GenServer
@@ -47,13 +47,14 @@ defmodule SkyscraperOtp.Dispatcher.Server do
     |> GenServer.call(:get_state)
   end
 
-
   def init(args) do
+    building = Keyword.fetch!(args, :building)
+
     {:ok,
      %{
-       building: Keyword.fetch!(args, :building),
+       building: building,
        interface_mods: Keyword.fetch!(args, :interface_mods),
-       dispatcher: Dispatcher.build(args)
+       dispatcher: Cache.get_dispatcher(building) || Dispatcher.build(args)
      }}
   end
 
@@ -129,24 +130,21 @@ defmodule SkyscraperOtp.Dispatcher.Server do
   end
 
   defp process_new_state({instructions, dispatcher}, state) do
-    Enum.reduce(instructions, dispatcher, &run_instruction(&1, &2, state))
+    instructions |> Enum.each(&run_instruction(&1, dispatcher, state))
+    Cache.update_dispatcher(state.building, dispatcher)
 
     %{state | dispatcher: dispatcher}
   end
 
   defp run_instruction({:propose_to_handle, el_id, buttons}, dispatcher, state) do
     :ok = state.building |> Elevator.propose(el_id, buttons)
-    dispatcher
   end
 
   defp run_instruction({:cancel_request, el_id, dest}, dispatcher, state) do
     :ok = state.building |> Elevator.cancel_request(el_id, dest)
-    dispatcher
   end
 
   defp display(state) do
-    # IEx.pry()
-
     Enum.each(state.interface_mods, fn interface_mod ->
       Task.Supervisor.start_child(SkyscraperOtp.TaskSupervisor, fn ->
         Interface.change_dispatcher_state(
