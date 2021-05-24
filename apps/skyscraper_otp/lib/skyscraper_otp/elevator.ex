@@ -28,6 +28,15 @@ defmodule SkyscraperOtp.Elevator do
       current_floor: Keyword.get(opts, :current_floor, 1),
       step_durations: Keyword.get(opts, :step_durations, %{})
     }
+    |> extract_instructions()
+  end
+
+  def recover(%Elevator{step: :idling} = elevator), do: elevator |> extract_instructions()
+
+  def recover(%Elevator{} = elevator) do
+    elevator
+    |> add_instruction(:reserve_step_time)
+    |> extract_instructions()
   end
 
   @doc """

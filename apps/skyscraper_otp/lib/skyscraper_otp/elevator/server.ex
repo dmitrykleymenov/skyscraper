@@ -12,7 +12,6 @@ defmodule SkyscraperOtp.Elevator.Server do
   @doc """
    Handles inside cabin button push
   """
-
   def push_button(building, id, button, registry \\ SkyscraperOtp.Registry) do
     name(building, id, registry)
     |> GenServer.cast({:push_elevator_button, button})
@@ -43,13 +42,19 @@ defmodule SkyscraperOtp.Elevator.Server do
     building = Keyword.fetch!(arg, :building)
     id = Keyword.fetch!(arg, :id)
 
+    state = %{
+      building: building,
+      id: id,
+      elevator: nil,
+      interface_mods: Keyword.fetch!(arg, :interface_mods)
+    }
+
     {:ok,
-     %{
-       elevator: Cache.get_elevator(building, id) || Elevator.build(arg),
-       building: building,
-       id: id,
-       interface_mods: Keyword.fetch!(arg, :interface_mods)
-     }}
+     case Cache.get_elevator(building, id) do
+       nil -> Elevator.build(arg)
+       elevator -> Elevator.recover(elevator)
+     end
+     |> process_new_state(state)}
   end
 
   @impl GenServer
