@@ -2,6 +2,7 @@ defmodule Skyscraper.Buildings.Building do
   alias __MODULE__
   use Ecto.Schema
   import Ecto.Changeset
+  @name_regex ~r/\A[^:]*(?!:)[^:]*\z/
 
   schema "buildings" do
     field(:name, :string)
@@ -19,6 +20,7 @@ defmodule Skyscraper.Buildings.Building do
     |> validate_required([:name, :floors_amount, :elevators_quantity])
     |> validate_inclusion(:elevators_quantity, 2..5)
     |> validate_inclusion(:floors_amount, 30..50)
+    |> validate_format(:name, @name_regex, message: "can't contain colon(:) character")
     |> unique_constraint(:name)
   end
 
