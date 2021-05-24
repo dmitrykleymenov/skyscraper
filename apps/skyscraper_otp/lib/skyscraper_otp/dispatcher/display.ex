@@ -8,7 +8,7 @@ defmodule SkyscraperOtp.Dispatcher.Display do
   """
 
   @doc """
-    Builds a `Display` struct for `dispatcher` with `buiding` reference
+    Builds a `Display` struct for `dispatcher` from `buiding`
   """
   def build(building, dispatcher) do
     %Display{

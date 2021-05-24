@@ -3,6 +3,13 @@ defmodule SkyscraperOtp.Elevator.Display do
   alias SkyscraperOtp.Elevator
   defstruct [:building, :id, :status, :current_floor, :floor_buttons]
 
+  @moduledoc """
+    Module defines `Elevator` struct which is provided to `Interface` behaviour
+  """
+
+  @doc """
+    Builds a `Display` struct for `elevator` with `id` from `buiding`
+  """
   def build(building, id, elevator) do
     %Display{
       building: building,
