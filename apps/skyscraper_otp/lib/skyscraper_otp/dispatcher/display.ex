@@ -3,6 +3,13 @@ defmodule SkyscraperOtp.Dispatcher.Display do
   alias SkyscraperOtp.Dispatcher
   defstruct [:building, :buttons]
 
+  @moduledoc """
+    Module defines `Dispatcher` struct which is provided to `Interface` behaviour
+  """
+
+  @doc """
+    Builds a `Display` struct for `dispatcher` with `buiding` reference
+  """
   def build(building, dispatcher) do
     %Display{
       building: building,

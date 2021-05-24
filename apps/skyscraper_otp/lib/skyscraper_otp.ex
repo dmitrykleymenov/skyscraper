@@ -5,7 +5,7 @@ defmodule SkyscraperOtp do
   alias SkyscraperOtp.{BuildingsSupervisor, BuildingSupervisor}
 
   @moduledoc """
-  SkyscraperOtp keeps whole OTP related logic for elevators and dispatcher
+    SkyscraperOtp keeps whole OTP related logic for elevators and dispatcher
   """
 
   def build(arg) do
