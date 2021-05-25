@@ -158,17 +158,17 @@ defmodule SkyscraperOtp.Dispatcher.Server do
   end
 
   defp process_new_state({instructions, dispatcher}, state) do
-    instructions |> Enum.each(&run_instruction(&1, dispatcher, state))
+    instructions |> Enum.each(&run_instruction(&1, state))
     Cache.update_dispatcher(state.building, dispatcher)
 
     %{state | dispatcher: dispatcher}
   end
 
-  defp run_instruction({:propose_to_handle, el_id, buttons}, dispatcher, state) do
+  defp run_instruction({:propose_to_handle, el_id, buttons}, state) do
     :ok = state.building |> Elevator.propose(el_id, buttons)
   end
 
-  defp run_instruction({:cancel_request, el_id, dest}, dispatcher, state) do
+  defp run_instruction({:cancel_request, el_id, dest}, state) do
     :ok = state.building |> Elevator.cancel_request(el_id, dest)
   end
 
