@@ -6,13 +6,15 @@ defmodule SkyscraperOtp.ElevatorTest do
   setup context do
     elevator =
       Elevator.build([])
+      |> elem(1)
       |> Map.merge(context |> Map.get(:additionals, %{}))
 
     %{elevator: elevator}
   end
 
   test "builds an Elevator struct with the given params" do
-    elevator = Elevator.build(current_floor: 5, floors: [4, 5, 6])
+    {instructions, elevator} = Elevator.build(current_floor: 5, floors: [4, 5, 6])
+    assert instructions == []
     assert %Elevator{} = elevator
     assert elevator |> Elevator.current_floor() == 5
     assert elevator.acceptable_floors == [4, 5, 6]
@@ -22,7 +24,8 @@ defmodule SkyscraperOtp.ElevatorTest do
 
   test "returns all acceptable floors", %{elevator: elevator} do
     assert elevator |> Elevator.acceptable_floors() == 1..50 |> Enum.to_list()
-    assert Elevator.build(floors: [1, 2, 3]) |> Elevator.acceptable_floors() == [1, 2, 3]
+    floors = Elevator.build(floors: [1, 2, 3]) |> elem(1) |> Elevator.acceptable_floors()
+    assert floors == [1, 2, 3]
   end
 
   test "returns empty list when nothing to handle", %{elevator: elevator} do
@@ -71,6 +74,21 @@ defmodule SkyscraperOtp.ElevatorTest do
 
   test "returns default if step duration wasn't provided", %{elevator: elevator} do
     assert elevator |> Elevator.step_duration() == 1000
+  end
+
+  describe ".recover/1" do
+    test "adds no instructuons when sptep is idling", %{elevator: cache} do
+      {instructions, elevator} = cache |> Elevator.recover()
+      assert elevator == cache
+      assert instructions == []
+    end
+
+    @tag additionals: %{step: :opening_doors}
+    test "adds no instructuons when sptep isn't idling", %{elevator: cache} do
+      {instructions, elevator} = cache |> Elevator.recover()
+      assert elevator == cache
+      assert instructions == [:reserve_step_time]
+    end
   end
 
   describe ".push_button/2" do
