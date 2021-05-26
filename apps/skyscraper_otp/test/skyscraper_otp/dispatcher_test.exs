@@ -18,6 +18,11 @@ defmodule SkyscraperOtp.DispatcherTest do
            |> Dispatcher.active_buttons() == [{5, :up}, {7, :down}]
   end
 
+  test "returns all possible buttons" do
+    assert %Dispatcher{buttons: [{1, :up}, {2, :down}, {2, :up}, {3, :down}]}
+           |> Dispatcher.available_buttons() == [{1, :up}, {2, :down}, {2, :up}, {3, :down}]
+  end
+
   test "returns elevator ids", %{dispatcher: dispatcher} do
     assert dispatcher |> Dispatcher.elevator_ids() == [1, 2, 3]
   end

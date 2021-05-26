@@ -23,11 +23,6 @@ defmodule SkyscraperOtp.Dispatcher do
   end
 
   @doc """
-    Answers if `button` is marked as pushed in `dispatcher`
-  """
-  def button_active?(%Dispatcher{queue: queue}, button), do: button in queue
-
-  @doc """
     Returns all pushed buttons for `dispatcher`
   """
   def active_buttons(%Dispatcher{queue: queue}), do: queue
@@ -38,6 +33,11 @@ defmodule SkyscraperOtp.Dispatcher do
   def available_buttons(%Dispatcher{buttons: buttons}), do: buttons
 
   @doc """
+    Returns all elevator ids for `dispatcher`
+  """
+  def elevator_ids(%Dispatcher{elevators: elevators}), do: elevators |> Map.keys()
+
+  @doc """
     Tells `dispatcher` about pushed `button` and `elevators_handle_time` for that possible request
   """
   def push_button(%Dispatcher{} = dispatcher, button, elevators_handle_time) do
@@ -46,11 +46,6 @@ defmodule SkyscraperOtp.Dispatcher do
     |> add_proposal_instruction(optimal_elevator(elevators_handle_time), [button])
     |> extract_instructions()
   end
-
-  @doc """
-    Returns all elevator ids for `dispatcher`
-  """
-  def elevator_ids(%Dispatcher{elevators: elevators}), do: elevators |> Map.keys()
 
   @doc """
     Sets `dest_info` as handling request for `el_id`
@@ -88,6 +83,11 @@ defmodule SkyscraperOtp.Dispatcher do
   def propose_requests(%Dispatcher{} = dispatcher, el_id) do
     dispatcher |> add_proposal_instruction(el_id, dispatcher.queue) |> extract_instructions()
   end
+
+  @doc """
+    Answers if `button` is marked as pushed in `dispatcher`
+  """
+  def button_active?(%Dispatcher{queue: queue}, button), do: button in queue
 
   defp map_elevators(elevators), do: for(el_id <- elevators, do: {el_id, nil}, into: %{})
 
