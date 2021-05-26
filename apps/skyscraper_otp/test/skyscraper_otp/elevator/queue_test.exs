@@ -2,6 +2,10 @@ defmodule SkyscraperOtp.Elevator.QueueTest do
   alias SkyscraperOtp.Elevator.Queue
   use ExUnit.Case, async: true
 
+  test "builds empty queue" do
+    assert Queue.build() |> Queue.list() == []
+  end
+
   test "returns list of all queued destinations" do
     result =
       %Queue{up_queue: Prioqueue.new([1, 2, 3]), down_queue: Prioqueue.new([5, 6, 7])}
