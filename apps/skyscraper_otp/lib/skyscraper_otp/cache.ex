@@ -6,36 +6,36 @@ defmodule SkyscraperOtp.Cache do
   """
 
   @doc false
-  def start_link(_arg) do
-    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  def start_link(arg) do
+    GenServer.start_link(__MODULE__, arg, name: arg |> Keyword.get(:name, __MODULE__))
   end
 
   @doc """
     Sets cache for dispatcher from `building` to `dispatcher`
   """
-  def update_dispatcher(building, dispatcher) do
-    GenServer.cast(__MODULE__, {:update_dispatcher, building, dispatcher})
+  def update_dispatcher(building, dispatcher, name \\ __MODULE__) do
+    GenServer.cast(name, {:update_dispatcher, building, dispatcher})
   end
 
   @doc """
     Sets cache for elevator with `id` from `building` to `elevator`
   """
-  def update_elevator(building, id, elevator) do
-    GenServer.cast(__MODULE__, {:update_elevator, building, id, elevator})
+  def update_elevator(building, id, elevator, name \\ __MODULE__) do
+    GenServer.cast(name, {:update_elevator, building, id, elevator})
   end
 
   @doc """
     Clears cache for elevators and dispatcher from `building`
   """
-  def clear_building(building) do
-    GenServer.cast(__MODULE__, {:clear_buillding, building})
+  def clear_building(building, name \\ __MODULE__) do
+    GenServer.cast(name, {:clear_buillding, building})
   end
 
   @doc """
     Fetches cached dispatcher state from `building`
   """
-  def get_dispatcher(building) do
-    case :ets.lookup(:dispatchers, building) do
+  def get_dispatcher(building, name \\ __MODULE__) do
+    case :ets.lookup(:"#{name}_dispatchers", building) do
       [] -> nil
       [{_key, dispatcher}] -> dispatcher
     end
@@ -44,37 +44,37 @@ defmodule SkyscraperOtp.Cache do
   @doc """
     Fetches cached state for elevator with `id` from `building`
   """
-  def get_elevator(building, id) do
-    case :ets.lookup(:elevators, {building, id}) do
+  def get_elevator(building, id, name \\ __MODULE__) do
+    case :ets.lookup(:"#{name}_elevators", {building, id}) do
       [] -> nil
       [{_key, elevator}] -> elevator
     end
   end
 
   @impl true
-  def init([]) do
-    :dispatchers = :ets.new(:dispatchers, [:named_table])
-    :elevators = :ets.new(:elevators, [:named_table])
+  def init(name: name) do
+    :dispatchers = :ets.new(:"#{name}_dispatchers", [:named_table])
+    :elevators = :ets.new(:"#{name}_elevators", [:named_table])
 
-    {:ok, nil}
+    {:ok, name}
   end
 
   @impl true
-  def handle_cast({:update_dispatcher, building, dispatcher}, state) do
-    true = :ets.insert(:dispatchers, {building, dispatcher})
-    {:noreply, state}
+  def handle_cast({:update_dispatcher, building, dispatcher}, name) do
+    true = :ets.insert(:"#{name}_dispatchers", {building, dispatcher})
+    {:noreply, name}
   end
 
   @impl true
-  def handle_cast({:update_elevator, building, id, elevator}, state) do
-    true = :ets.insert(:elevators, {{building, id}, elevator})
-    {:noreply, state}
+  def handle_cast({:update_elevator, building, id, elevator}, name) do
+    true = :ets.insert(:"#{name}_elevators", {{building, id}, elevator})
+    {:noreply, name}
   end
 
   @impl true
-  def handle_cast({:clear_building, building}, state) do
-    true = :ets.delete(:dispatchers, building)
-    true = :ets.match_delete(:elevators, {{building, :_}, :_})
-    {:noreply, state}
+  def handle_cast({:clear_building, building}, name) do
+    true = :ets.delete(:"#{name}_dispatchers", building)
+    true = :ets.match_delete(:"#{name}_elevators", {{building, :_}, :_})
+    {:noreply, name}
   end
 end
