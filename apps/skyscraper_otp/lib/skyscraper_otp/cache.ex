@@ -7,7 +7,9 @@ defmodule SkyscraperOtp.Cache do
 
   @doc false
   def start_link(arg) do
-    GenServer.start_link(__MODULE__, arg, name: arg |> Keyword.get(:name, __MODULE__))
+    name = arg |> Keyword.get(:name, __MODULE__)
+
+    GenServer.start_link(__MODULE__, name, name: name)
   end
 
   @doc """
@@ -52,9 +54,9 @@ defmodule SkyscraperOtp.Cache do
   end
 
   @impl true
-  def init(name: name) do
-    :dispatchers = :ets.new(:"#{name}_dispatchers", [:named_table])
-    :elevators = :ets.new(:"#{name}_elevators", [:named_table])
+  def init(name) do
+    :ets.new(:"#{name}_dispatchers", [:named_table])
+    :ets.new(:"#{name}_elevators", [:named_table])
 
     {:ok, name}
   end
