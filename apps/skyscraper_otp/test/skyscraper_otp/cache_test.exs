@@ -1,6 +1,6 @@
 defmodule SkyscraperOtp.CacheTest do
-  alias SkyscraperOtp.Cache
   use ExUnit.Case, async: true
+  alias SkyscraperOtp.Cache
 
   test "creates ets tables for elevators and dispatchers on start", %{test: name} do
     assert :ets.whereis(:"#{name}_elevators") == :undefined
