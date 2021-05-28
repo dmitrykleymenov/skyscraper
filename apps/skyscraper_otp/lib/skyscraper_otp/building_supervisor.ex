@@ -4,7 +4,7 @@ defmodule SkyscraperOtp.BuildingSupervisor do
   alias SkyscraperOtp.Elevator.Server, as: Elevator
 
   @moduledoc """
-    Root supervisor for whole new buildings dispatcher and elevators
+    Root supervisor for whole new building dispatcher and elevators
   """
 
   @doc false
