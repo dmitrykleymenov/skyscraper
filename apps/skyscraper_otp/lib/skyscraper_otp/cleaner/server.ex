@@ -16,19 +16,22 @@ defmodule SkyscraperOtp.Cleaner.Server do
   @doc """
     Tells server about new action in building
   """
-  def touch(arg) do
-    building = Keyword.fetch!(arg, :building)
+  def touch(building, arg) do
     registry = Keyword.get(arg, :registry, SkyscraperOtp.Registry)
     max_idle_seconds = Keyword.get(arg, :max_idle_seconds)
 
-    GenServer.cast(__MODULE__, {:touch, {building, registry}, max_idle_seconds})
+    arg
+    |> Keyword.get(:name, __MODULE__)
+    |> GenServer.cast({:touch, {building, registry}, max_idle_seconds})
   end
 
   @doc """
     Calls `SkyScraper.destroy` with `building`
   """
-  def destroy(building, registry \\ SkyscraperOtp.Registry) do
-    GenServer.cast(__MODULE__, {:destroy, {building, registry}})
+  def destroy(building, arg \\ []) do
+    arg
+    |> Keyword.get(:name, __MODULE__)
+    |> GenServer.cast({:destroy, {building, Keyword.get(arg, :registry, SkyscraperOtp.Registry)}})
   end
 
   @impl true

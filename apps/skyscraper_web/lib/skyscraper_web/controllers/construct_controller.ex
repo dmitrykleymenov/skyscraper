@@ -10,7 +10,7 @@ defmodule SkyscraperWeb.ConstructController do
       )
     end
 
-    SkyscraperOtp.Cleaner.touch(building: user.building.name)
+    SkyscraperOtp.Cleaner.touch(user.building.name)
 
     redirect(conn, to: Routes.live_path(conn, SkyscraperWeb.ConstructLive, user.building.name))
   end
@@ -19,7 +19,7 @@ defmodule SkyscraperWeb.ConstructController do
     building = user.building.name
 
     if SkyscraperOtp.active?(building) do
-      SkyscraperOtp.Cleaner.destroy(building)
+      building |> SkyscraperOtp.Cleaner.destroy()
       building |> SkyscraperOtp.Cache.clear_building()
     end
 

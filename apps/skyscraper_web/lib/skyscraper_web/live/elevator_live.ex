@@ -50,7 +50,7 @@ defmodule SkyscraperWeb.ElevatorLive do
 
   @impl true
   def handle_info({:elevator_state_changed, elevator}, socket) do
-    Cleaner.touch(building: elevator.building)
+    Cleaner.touch(elevator.building)
     {:noreply, socket |> assign(:elevator, elevator)}
   end
 end
