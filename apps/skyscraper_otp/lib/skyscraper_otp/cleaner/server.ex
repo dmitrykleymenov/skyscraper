@@ -8,9 +8,9 @@ defmodule SkyscraperOtp.Cleaner.Server do
 
   @doc false
   def start_link(arg) do
-    name = arg |> Keyword.get(:name, __MODULE__)
+    {name, arg} = arg |> Keyword.pop(:name, __MODULE__)
 
-    GenServer.start_link(__MODULE__, name, name: name)
+    GenServer.start_link(__MODULE__, arg, name: name)
   end
 
   @doc """

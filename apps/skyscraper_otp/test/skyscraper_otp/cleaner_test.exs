@@ -1,56 +1,105 @@
 defmodule SkyscraperOtp.CleanerTest do
   use ExUnit.Case, async: true
-  alias SkyscraperOtp.Cache
+  alias SkyscraperOtp.Cleaner
 
-  test "checks on abandoned skycrapers", %{test: name} do
-    assert :ets.whereis(:"#{name}_elevators") == :undefined
-    assert :ets.whereis(:"#{name}_dispatchers") == :undefined
-
-    {:ok, _} = start_supervised({Cache, name: name})
-
-    refute :ets.whereis(:"#{name}_elevators") == :undefined
-    refute :ets.whereis(:"#{name}_dispatchers") == :undefined
+  test "Builds a new cleaner" do
+    assert Cleaner.build() == %{}
   end
 
-  test "adds dispatcher to cache", %{test: name} do
-    {:ok, cache} = start_supervised({Cache, name: name})
-    assert :ets.lookup(:"#{name}_dispatchers", "building_name") == []
-    Cache.update_dispatcher("building_name", "some_dispatcher", cache)
-    Process.sleep(1)
+  describe ".nullify_idling_time/3" do
+    test "puts new building info to cleaner" do
+      building_info = {"building_name", Registry}
+      max_idle_seconds = 1000
 
-    assert :ets.lookup(:"#{name}_dispatchers", "building_name") == [
-             {"building_name", "some_dispatcher"}
-           ]
+      cleaner = Cleaner.nullify_idling_time(%{}, building_info, max_idle_seconds)
+      assert cleaner |> Map.has_key?(building_info)
+
+      assert_in_delta cleaner[building_info] |> elem(0) |> DateTime.to_unix(),
+                      DateTime.utc_now() |> DateTime.to_unix(),
+                      1
+
+      assert cleaner[building_info] |> elem(1) == max_idle_seconds
+    end
+
+    test "sets up default idle time when idle time isn't provided" do
+      cleaner = Cleaner.nullify_idling_time(%{}, {"building_name", Registry}, nil)
+
+      assert cleaner[{"building_name", Registry}] |> elem(1) == 60 * 10
+    end
+
+    test "updates existed building info in cleaner" do
+      building_info = {"building_name", Registry}
+      max_idle_seconds = 1000
+      datetime = DateTime.utc_now() |> DateTime.add(-100)
+
+      cleaner = %{building_info => {datetime, 600}}
+
+      cleaner = Cleaner.nullify_idling_time(cleaner, building_info, max_idle_seconds)
+
+      assert_in_delta cleaner[building_info] |> elem(0) |> DateTime.to_unix(),
+                      DateTime.utc_now() |> DateTime.to_unix(),
+                      1
+
+      assert cleaner[building_info] |> elem(1) == max_idle_seconds
+    end
+
+    test "keeps max idle time if non is provided" do
+      building_info = {"building_name", Registry}
+      max_idle_seconds = 1000
+
+      cleaner =
+        %{building_info => {DateTime.utc_now(), max_idle_seconds}}
+        |> Cleaner.nullify_idling_time(building_info, nil)
+
+      assert cleaner[building_info] |> elem(1) == max_idle_seconds
+    end
   end
 
-  test "gets dispatcher from cache", %{test: name} do
-    {:ok, cache} = start_supervised({Cache, name: name})
+  describe ".destroy_building/2" do
+    test "ignores if no buildings are with the key" do
+      building_info = {"building_name", Registry}
 
-    refute Cache.get_dispatcher("building_name", name)
-    Cache.update_dispatcher("building_name", "some_dispatcher", cache)
-    Process.sleep(1)
+      cleaner = %{building_info => {DateTime.utc_now(), 600}}
 
-    assert Cache.get_dispatcher("building_name", name) == "some_dispatcher"
+      {notifications, new_cleaner} =
+        cleaner |> Cleaner.destroy_building({"another_buildng", Registry})
+
+      assert cleaner == new_cleaner
+      assert notifications == []
+    end
+
+    test "deletes from cleaner track and notify to destroy the building" do
+      building_info = {"building_name", Registry}
+
+      cleaner = %{building_info => {DateTime.utc_now(), 600}}
+
+      {notifications, cleaner} = cleaner |> Cleaner.destroy_building(building_info)
+
+      assert cleaner == %{}
+      assert notifications == [{:destroy, building_info}]
+    end
   end
 
-  test "adds elevator to cache", %{test: name} do
-    {:ok, cache} = start_supervised({Cache, name: name})
-    assert :ets.lookup(:"#{name}_elevators", {"building_name", "id"}) == []
-    Cache.update_elevator("building_name", "id", "some_elevator", cache)
-    Process.sleep(1)
+  describe ".check/1" do
+    test "deletes from cleaner track and notify to destroy the building" do
+      cleaner = %{
+        {"actual_1", Registry} => {DateTime.utc_now() |> DateTime.add(-500), 600},
+        {"abandoned_1", Registry} => {DateTime.utc_now() |> DateTime.add(-500), 400},
+        {"actual_2", Registry} => {DateTime.utc_now() |> DateTime.add(-50), 60},
+        {"abandoned_2", Registry} => {DateTime.utc_now() |> DateTime.add(-50), 40}
+      }
 
-    assert :ets.lookup(:"#{name}_elevators", {"building_name", "id"}) == [
-             {{"building_name", "id"}, "some_elevator"}
-           ]
-  end
+      {notifications, cleaner} = cleaner |> Cleaner.check()
 
-  test "gets elevator from cache", %{test: name} do
-    {:ok, cache} = start_supervised({Cache, name: name})
+      assert cleaner |> Map.keys() |> Enum.sort() == [
+               {"actual_1", Registry},
+               {"actual_2", Registry}
+             ]
 
-    refute Cache.get_elevator("building_name", "id", name)
-    Cache.update_elevator("building_name", "id", "some_elevator", cache)
-    Process.sleep(1)
-
-    assert Cache.get_elevator("building_name", "id", name) == "some_elevator"
+      assert notifications |> Enum.sort() == [
+               {:destroy, {"abandoned_1", Registry}},
+               {:destroy, {"abandoned_2", Registry}}
+             ]
+    end
   end
 end

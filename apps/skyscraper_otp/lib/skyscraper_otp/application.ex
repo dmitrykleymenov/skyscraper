@@ -11,7 +11,7 @@ defmodule SkyscraperOtp.Application do
       {DynamicSupervisor, name: SkyscraperOtp.BuildingsSupervisor, strategy: :one_for_one},
       {Task.Supervisor, name: SkyscraperOtp.TaskSupervisor},
       {Phoenix.PubSub, name: SkyscraperOtp.PubSub},
-      SkyscraperOtp.Cleaner,
+      SkyscraperOtp.Cleaner.Server,
       SkyscraperOtp.Cache
     ]
 
