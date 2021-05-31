@@ -37,17 +37,17 @@ defmodule SkyscraperOtp.Cleaner.Server do
   @impl true
   def init(arg) do
     :timer.send_interval(Keyword.get(arg, :period, @period), :check)
-    {:ok, %{}}
+    {:ok, Cleaner.build()}
   end
 
   @impl true
   def handle_cast({:touch, building_info, max_idle_seconds}, cleaner) do
-    {:noreply, cleaner |> Cleaner.renew_idle_time(building_info, max_idle_seconds)}
+    {:noreply, cleaner |> Cleaner.nullify_idling_time(building_info, max_idle_seconds)}
   end
 
   @impl true
   def handle_cast({:destroy, building_info}, cleaner) do
-    {instructions, cleaner} = cleaner |> Cleaner.destroy(building_info)
+    {instructions, cleaner} = cleaner |> Cleaner.destroy_building(building_info)
     instructions |> Enum.each(&run/1)
 
     {:noreply, cleaner}

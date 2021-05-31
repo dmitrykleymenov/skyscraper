@@ -1,84 +1,53 @@
 defmodule SkyscraperOtp.Cleaner do
-  use GenServer
-  @max_idle_seconds 10 * 60
-  @period 10_000
+  @default_max_idle_seconds 10 * 60
   @moduledoc """
-    Clener contains logic for destroying abandoned skyscrapers
+    Clener contains logic for detecting abandoned skyscrapers
   """
 
-  @doc false
-  def start_link(arg) do
-    name = arg |> Keyword.get(:name, __MODULE__)
-
-    GenServer.start_link(__MODULE__, name, name: name)
-  end
+  @doc "Builds a new cleaner"
+  def build(), do: %{}
 
   @doc """
     Renews last building action time to `now`
   """
-  def touch(arg) do
-    building = Keyword.fetch!(arg, :building)
-    registry = Keyword.get(arg, :registry, SkyscraperOtp.Registry)
-    max_idle_seconds = Keyword.get(arg, :max_idle_seconds)
 
-    GenServer.cast(__MODULE__, {:touch, {building, registry}, max_idle_seconds})
+  def nullify_idling_time(cleaner, building_info, nil) do
+    Map.update(
+      cleaner,
+      building_info,
+      {DateTime.utc_now(), @default_max_idle_seconds},
+      fn {_, old_max_idle_seconds} ->
+        {DateTime.utc_now(), old_max_idle_seconds}
+      end
+    )
+  end
+
+  def nullify_idling_time(cleaner, building_info, max_idle_seconds) do
+    Map.put(cleaner, building_info, {DateTime.utc_now(), max_idle_seconds})
   end
 
   @doc """
-    Calls `SkyScraper.destroy` with `building`
+    Clears a building based on the `building_info`
   """
-  def destroy(building, registry \\ SkyscraperOtp.Registry) do
-    GenServer.cast(__MODULE__, {:destroy, building, registry})
-  end
-
-  @impl true
-  def init(arg) do
-    :timer.send_interval(Keyword.get(arg, :period, @period), :check)
-    {:ok, %{}}
-  end
-
-  @impl true
-  def handle_cast({:touch, building_info, max_idle_seconds}, skyscrapers) do
-    skyscrapers =
-      Map.update(
-        skyscrapers,
-        building_info,
-        {DateTime.utc_now(), max_idle_seconds || @max_idle_seconds},
-        fn {_, old_max_idle_seconds} ->
-          {DateTime.utc_now(), max_idle_seconds || old_max_idle_seconds}
-        end
-      )
-
-    {:noreply, skyscrapers}
-  end
-
-  @impl true
-  def handle_cast({:destroy, building, registry}, skyscrapers) do
-    case(Map.pop(skyscrapers, {building, registry})) do
-      {nil, skyscrapers} ->
-        {:noreply, skyscrapers}
-
-      {_, skyscrapers} ->
-        SkyscraperOtp.destroy(building, registry)
-        {:noreply, skyscrapers}
+  def destroy_building(cleaner, building_info) do
+    case Map.pop(cleaner, building_info) do
+      {nil, cleaner} -> {[], cleaner}
+      {_, cleaner} -> {[{:destroy, building_info}], cleaner}
     end
   end
 
-  @impl true
-  def handle_info(:check, skyscrapers) do
-    skyscrapers
-    |> Enum.filter(&abandoned?(&1))
-    |> Enum.each(&destroy_skyscraper(&1))
-
-    {:noreply, skyscrapers}
+  def check(cleaner) do
+    cleaner
+    |> Enum.filter(&abandoned?(&1 |> elem(1)))
+    |> Enum.reduce({[], cleaner}, &queue_to_destroy(&2, &1 |> elem(0)))
   end
 
-  defp abandoned?({_skyscraper_info_, {last_touch_at, max_idle_seconds}}) do
+  defp abandoned?({last_touch_at, max_idle_seconds}) do
     abandoned_at = DateTime.add(last_touch_at, max_idle_seconds)
     DateTime.compare(DateTime.utc_now(), abandoned_at) == :gt
   end
 
-  defp destroy_skyscraper({{name, registry}, _abandon_info}) do
-    destroy(name, registry)
+  defp queue_to_destroy({instructions, cleaner}, building_info) do
+    {[{:destroy, building_info} | instructions], cleaner |> Map.delete(building_info)}
   end
 end
