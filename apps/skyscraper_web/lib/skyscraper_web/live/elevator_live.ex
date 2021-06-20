@@ -1,6 +1,6 @@
 defmodule SkyscraperWeb.ElevatorLive do
   use SkyscraperWeb, :live_view
-  alias SkyscraperOtp.Cleaner
+  alias SkyscraperOtp.Cleaner.Server, as: Cleaner
 
   @impl true
   def render(assigns) do

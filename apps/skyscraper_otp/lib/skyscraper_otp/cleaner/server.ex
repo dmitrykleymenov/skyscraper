@@ -2,6 +2,7 @@ defmodule SkyscraperOtp.Cleaner.Server do
   use GenServer
   alias SkyscraperOtp.Cleaner
   @period 10_000
+  @default_max_idle_seconds 10 * 60
   @moduledoc """
     OTP Server for `Cleaner`
   """
@@ -16,9 +17,9 @@ defmodule SkyscraperOtp.Cleaner.Server do
   @doc """
     Tells server about new action in building
   """
-  def touch(building, arg) do
+  def touch(building, arg \\ []) do
     registry = Keyword.get(arg, :registry, SkyscraperOtp.Registry)
-    max_idle_seconds = Keyword.get(arg, :max_idle_seconds)
+    max_idle_seconds = Keyword.get(arg, :max_idle_seconds, @default_max_idle_seconds)
 
     arg
     |> Keyword.get(:name, __MODULE__)

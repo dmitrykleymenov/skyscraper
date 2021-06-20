@@ -1,5 +1,6 @@
 defmodule SkyscraperWeb.BuildingController do
   alias Skyscraper.Buildings
+  alias SkyscraperOtp.Cleaner.Server, as: Cleaner
   use SkyscraperWeb, :controller
 
   def edit(conn, _params, user) do
@@ -22,7 +23,7 @@ defmodule SkyscraperWeb.BuildingController do
   def update(conn, %{"building" => building_params}, user) do
     case user |> Buildings.update_building(building_params) do
       {:ok, _building} ->
-        user.building.name |> SkyscraperOtp.Cleaner.destroy()
+        user.building.name |> Cleaner.destroy()
         user.building.name |> SkyscraperOtp.Cache.clear_building()
 
         conn

@@ -1,5 +1,7 @@
 defmodule SkyscraperWeb.ConstructController do
   use SkyscraperWeb, :controller
+  alias SkyscraperOtp.Cleaner.Server, as: Cleaner
+  @max_idle_seconds_on_create 15 * 60
 
   def create(conn, user) do
     unless SkyscraperOtp.active?(user.building.name) do
@@ -10,7 +12,7 @@ defmodule SkyscraperWeb.ConstructController do
       )
     end
 
-    SkyscraperOtp.Cleaner.touch(user.building.name)
+    Cleaner.touch(user.building.name, max_idle_seconds: @max_idle_seconds_on_create)
 
     redirect(conn, to: Routes.live_path(conn, SkyscraperWeb.ConstructLive, user.building.name))
   end
@@ -19,7 +21,7 @@ defmodule SkyscraperWeb.ConstructController do
     building = user.building.name
 
     if SkyscraperOtp.active?(building) do
-      building |> SkyscraperOtp.Cleaner.destroy()
+      building |> Cleaner.destroy()
       building |> SkyscraperOtp.Cache.clear_building()
     end
 
