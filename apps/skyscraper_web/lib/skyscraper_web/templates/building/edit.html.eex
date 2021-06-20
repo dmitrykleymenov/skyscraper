@@ -1,23 +1,26 @@
-<%= form_for @changeset, Routes.building_path(@conn, :update), fn f -> %>
-  <%= if @changeset.action do %>
-    <div class="alert alert-danger">
-      <p>Oops, something went wrong! Please check the errors below.</p>
+<div class="main__container main__container--center container">
+  <h1 class="form__title">Manage building</h1>
+  <%= form_for @changeset, Routes.building_path(@conn, :update), [class: "form"], fn f -> %>
+    <%= if @changeset.action do %>
+      <div class="alert alert-danger">
+        <p>Oops, something went wrong! Please check the errors below.</p>
+      </div>
+    <% end %>
+
+    <%= label f, :name, class: "form__label" %>
+    <%= text_input f, :name, class: "form__control" %>
+    <%= error_tag f, :name %>
+
+    <%= label f, :floors_amount, class: "form__label" %>
+    <%= select f, :floors_amount, 30..50, class: "form__control" %>
+    <%= error_tag f, :floors_amount %>
+
+    <%= label f, :elevators_quantity, class: "form__label" %>
+    <%= select f, :elevators_quantity, 2..5, class: "form__control" %>
+    <%= error_tag f, :elevators_quantity %>
+
+    <div>
+      <%= submit "Save", class: "form__btn" %>
     </div>
   <% end %>
-
-  <%= label f, :name %>
-  <%= text_input f, :name %>
-  <%= error_tag f, :name %>
-
-  <%= label f, :floors_amount %>
-  <%= select f, :floors_amount, 30..50 %>
-  <%= error_tag f, :floors_amount %>
-
-  <%= label f, :elevators_quantity %>
-  <%= select f, :elevators_quantity, 2..5 %>
-  <%= error_tag f, :elevators_quantity %>
-
-  <div>
-    <%= submit "Save" %>
-  </div>
-<% end %>
+</div>
