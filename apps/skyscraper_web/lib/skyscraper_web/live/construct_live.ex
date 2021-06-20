@@ -23,14 +23,14 @@ defmodule SkyscraperWeb.ConstructLive do
                         <button phx-click="hall_button_push"
                                 phx-value-floor="<%= floor %>"
                                 phx-value-direction="<%= direction %>"
-                                class="floors__btn icon-down<%= if active, do: "floors__btn--active"%>"
+                                class="floors__btn icon-down<%= if active, do: " floors__btn--active"%>"
                         ></button>
                     <% else %>
                       <button phx-click="hall_button_push"
                               phx-value-floor="<%= floor %>"
                               phx-value-direction="<%= direction %>"
 
-                              class="floors__btn icon-up<%= if active, do: "floors__btn--active"%>"
+                              class="floors__btn icon-up<%= if active, do: " floors__btn--active"%>"
                       ></button>
                       </li>
                     <% end %>

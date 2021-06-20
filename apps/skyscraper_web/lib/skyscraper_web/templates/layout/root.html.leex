@@ -34,39 +34,12 @@
                   <% end %>
                 </ul>
             </nav>
-            <%# <button class="header__burger burger">
+            <button class="header__burger burger">
                 <span></span>
-            </button> %>
+            </button>
         </div>
     </header>
 
-
-
-    <!-- <header>
-      <section class="container">
-        <nav role="navigation">
-          <ul>
-            <%= if @current_user do %>
-              <li><%= link "Sign out", to: Routes.pow_session_path(@conn, :delete), method: :delete %></li>
-              <li><%= link "Manage building", to: Routes.building_path(@conn, :edit)%></li>
-              <%= if @current_user.building do %>
-                <%= if skyscraper_active?(@current_user.building) do %>
-                  <li><%= link @current_user.building.name, to: Routes.live_path(@conn, SkyscraperWeb.ConstructLive, @current_user.building.name) %></li>
-                  <li><%= link "Stop elevators ", to: Routes.construct_path(@conn, :destroy), method: :delete %></li>
-                <% else %>
-                  <li><%= link "Start elevators ", to: Routes.construct_path(@conn, :create), method: :post %></li>
-                <% end %>
-              <% end %>
-            <% else %>
-              <li><%= link "Register", to: Routes.pow_registration_path(@conn, :new) %></li>
-              <li><%= link "Sign in", to: Routes.pow_session_path(@conn, :new) %></li>
-            <% end %>
-          </ul>
-        </nav>
-        <%= link "Skyscraper", to: Routes.page_path(@conn, :index) %>
-      </section>
-    </header>
-    -->
     <main class="main">
       <%= @inner_content %>
     </main>

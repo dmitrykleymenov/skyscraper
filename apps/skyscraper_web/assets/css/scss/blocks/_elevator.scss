@@ -69,7 +69,7 @@
         }
     }
 
-    &.up {
+    &.moving_up {
         .elevator__direction {
             &::before,
             &::after {
@@ -78,7 +78,7 @@
         }
     }
 
-    &.down {
+    &.moving_down {
         .elevator__direction {
             &::before,
             &::after {
