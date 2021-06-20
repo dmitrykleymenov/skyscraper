@@ -1,0 +1,28 @@
+<div class="main__container main__container--center container">
+  <%= form_for @changeset, @action, [as: :user], fn f -> %>
+    <h1 class="form__title">Register</h1>
+
+    <%= if @changeset.action do %>
+      <div class="alert alert-danger">
+        <p>Oops, something went wrong! Please check the errors below.</p>
+      </div>
+    <% end %>
+
+    <%= label f, Pow.Ecto.Schema.user_id_field(@changeset), class: "form__label" %>
+    <%= text_input f, Pow.Ecto.Schema.user_id_field(@changeset), class: "form__control" %>
+    <%= error_tag f, Pow.Ecto.Schema.user_id_field(@changeset) %>
+
+    <%= label f, :password, class: "form__label" %>
+    <%= password_input f, :password, class: "form__control" %>
+    <%= error_tag f, :password %>
+
+    <%= label f, :password_confirmation, class: "form__label" %>
+    <%= password_input f, :password_confirmation, class: "form__control" %>
+    <%= error_tag f, :password_confirmation %>
+
+    <div>
+      <%= submit "Register", class: "form__btn"  %>
+    </div>
+    <%= link "Sign in", to: Routes.pow_session_path(@conn, :new), class: "form__link" %>
+  <% end %>
+</div>

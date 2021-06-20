@@ -35,7 +35,8 @@ config :phoenix, :json_library, Jason
 
 config :skyscraper_web, :pow,
   user: Skyscraper.Users.User,
-  repo: Skyscraper.Repo
+  repo: Skyscraper.Repo,
+  web_module: SkyscraperWeb
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
