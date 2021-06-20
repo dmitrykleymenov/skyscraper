@@ -1,0 +1,9 @@
+.logo {
+    color: $color-accent;
+    font-size: 2.4rem;
+    font-weight: 500;
+
+    @include breakpoint($tablet-bp) {
+        font-size: 2.1rem;
+    }
+}

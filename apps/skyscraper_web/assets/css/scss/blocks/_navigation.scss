@@ -1,0 +1,55 @@
+.navigation {
+
+    @include breakpoint($tablet-bp) {
+        width: 300px;
+        height: 100%;
+        padding-top: 5rem;
+
+        background-color: $color-2;
+        box-shadow: $shadow-outside;
+
+        position: fixed;
+        top: 0;
+        right: -300px;
+
+        transition: right 0.3s;
+
+        &--active {
+            right: 0;
+        }
+    }
+
+    &__list {
+        display: flex;
+
+        list-style: none;
+
+        @include breakpoint($tablet-bp) {
+            flex-direction: column;
+            padding: 1rem 0;
+        }
+    }
+
+    &__item {
+        &:not(:last-child) {
+            margin-right: 2rem;
+
+            @include breakpoint($tablet-bp) {
+                margin-right: 0;
+            }
+        }
+    }
+
+    &__link {
+        transition: color 0.3s;
+        
+        &:hover {
+            color: $color-accent;
+        }
+
+        @include breakpoint($tablet-bp) {
+            display: block;
+            padding: 1rem 2rem;
+        }
+    }
+}

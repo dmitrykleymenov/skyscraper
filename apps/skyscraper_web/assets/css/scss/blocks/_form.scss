@@ -1,0 +1,75 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 60rem;
+
+    &__title {
+        margin-bottom: 5rem;
+
+        line-height   : 1;
+        font-weight   : 600;
+        font-size     : 2.6rem;
+        text-transform: uppercase;
+    }
+
+    &__group {
+        width: 100%;
+        margin-bottom: 3rem;
+    }
+
+    &__label {
+        display: block;
+        margin-bottom: 1rem;
+
+        font-size: 1.8rem;
+    }
+
+    &__control {
+        width: 100%;
+        padding: 1rem 2rem;
+
+        background-color: $color-2;
+        border: 2px solid darken($color-text, 20%);
+        border-radius: 5px;
+        outline: none;
+
+        color: inherit;
+        font-family: inherit;
+        font-size: inherit;
+
+        transition: border-color 0.3s;
+
+        &:focus {
+            border-color: $color-accent;
+        }
+    }
+    
+    select.form__control {
+        width: auto;
+    }
+
+    &__btn {
+        padding: 0.7em 1.6em;
+
+        background-color: $color-accent;
+        border: none;
+        outline: none;
+        border-radius: 5px;
+        cursor: pointer;
+
+        font-size: inherit;
+        font-family: inherit;
+        color: $color-1;
+    }
+
+    &__link {
+        display: block;
+        margin-top: 2rem;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}

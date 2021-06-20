@@ -1,0 +1,26 @@
+.container {
+    width    : 100%;
+    width: 1240px;
+    margin   : 0 auto;
+    padding: 0 1.5rem;
+
+    @include breakpoint($x-desktop-bp) {
+        width: 1140px;
+    }
+
+    @include breakpoint($desktop-bp) {
+        width: 960px;
+    }
+
+    @include breakpoint($tablet-bp) {
+        width: 720px;
+    }
+
+    @include breakpoint($reverse-bp) {
+        width: 540px;
+    }
+
+    @include breakpoint($mobile-bp) {
+        width: 100%;
+    }
+}

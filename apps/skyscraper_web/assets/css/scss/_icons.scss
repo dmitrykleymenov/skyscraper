@@ -1,0 +1,33 @@
+@font-face {
+    font-family : 'icomoon';
+    src         : url('./fonts/icomoon.woff') format('woff');
+    font-weight : normal;
+    font-style  : normal;
+    font-display: block;
+}
+
+
+.icon-up::before {
+    font-family: icomoon;
+    content    : '\e901';
+}
+
+.icon-down::before {
+    font-family: icomoon;
+    content    : '\e900';
+}
+
+.icon-arrow-up::before {
+    font-family: icomoon;
+    content    : '\e902';
+}
+
+.icon-arrow-down::before {
+    font-family: icomoon;
+    content    : '\e903';
+}
+
+.icon-close::before {
+    font-family: icomoon;
+    content    : '\e906';
+}

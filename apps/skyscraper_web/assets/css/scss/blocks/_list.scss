@@ -1,0 +1,15 @@
+.list {
+    list-style: none;
+
+    &__item {
+        &:not(:last-child) {
+            margin-bottom: 1rem;
+        }
+    }
+
+    &__link {
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
