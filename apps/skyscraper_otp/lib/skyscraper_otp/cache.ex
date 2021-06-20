@@ -30,7 +30,7 @@ defmodule SkyscraperOtp.Cache do
     Clears cache for elevators and dispatcher from `building`
   """
   def clear_building(building, name \\ __MODULE__) do
-    GenServer.cast(name, {:clear_buillding, building})
+    GenServer.cast(name, {:clear_building, building})
   end
 
   @doc """
