@@ -118,7 +118,7 @@
         }
     }
 
-    &.open {
+    &.opening_doors, &.doors_open {
         .elevator__doors::before {
             transform: translateX(-8px);
         }
