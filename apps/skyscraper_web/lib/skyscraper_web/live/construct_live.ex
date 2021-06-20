@@ -4,24 +4,51 @@ defmodule SkyscraperWeb.ConstructLive do
   @impl true
   def render(assigns) do
     ~L"""
-    <div class="building-container">
-      Building: <%= @dispatcher.building %>
-    <div class="dispatcher">
-      <%= for {{floor, direction}, active} <- @dispatcher.buttons do %>
-        <span phx-click="hall_button_push"
-                phx-value-floor="<%= floor %>"
-                phx-value-direction="<%= direction %>"
-                class="hall-button <%= if active, do: "active" %>">
-          <%= "#{floor}-#{direction}" %>
-      </span>
-      <% end %>
-    </div>
-    <hr>
-    <div class="elevators">
-      <%= for elevator <- @elevators do %>
-        <%= live_render(@socket , SkyscraperWeb.ElevatorLive, id: "elevator-#{elevator.id}", session: %{"elevator" => elevator}) %>
-      <% end %>
-    </div>
+      <div class="main__container container">
+        <div class="main__left">
+          <button class="main__floors-btn">Show floors</button>
+          <div class="floors">
+            <div class="floors__header">
+              <h2 class="floors__title">Floors</h2>
+              <button class="floors__close icon-close"></button>
+            </div>
+            <div class="floors__body">
+              <ul class="floors__list">
+                <li class="floors__item">
+                  <span class="floors__label">1</span>
+                  <%= for {{floor, direction}, active} <- @dispatcher.buttons do %>
+                    <%= if direction == :down do %>
+                      <li class="floors__item">
+                        <span class="floors__label"><%= floor %></span>
+                        <button phx-click="hall_button_push"
+                                phx-value-floor="<%= floor %>"
+                                phx-value-direction="<%= direction %>"
+                                class="floors__btn icon-down<%= if active, do: "floors__btn--active"%>"
+                        ></button>
+                    <% else %>
+                      <button phx-click="hall_button_push"
+                              phx-value-floor="<%= floor %>"
+                              phx-value-direction="<%= direction %>"
+
+                              class="floors__btn icon-up<%= if active, do: "floors__btn--active"%>"
+                      ></button>
+                      </li>
+                    <% end %>
+                  <% end %>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="main__right">
+          <h2 class="main__elevators-title">Elevators(<%= @dispatcher.building %>)</h2>
+          <div class="main__elevators">
+            <%= for elevator <- @elevators do %>
+              <%= live_render(@socket , SkyscraperWeb.ElevatorLive, id: "elevator-#{elevator.id}", session: %{"elevator" => elevator}) %>
+            <% end %>
+          </div>
+        </div>
+      </div>
     """
   end
 

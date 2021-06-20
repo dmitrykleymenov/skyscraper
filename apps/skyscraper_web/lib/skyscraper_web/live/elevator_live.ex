@@ -5,20 +5,26 @@ defmodule SkyscraperWeb.ElevatorLive do
   @impl true
   def render(assigns) do
     ~L"""
-      <div class="elevator">
-        <div class="number"><%= @elevator.id %></div>
-        <div class="status"><%= @elevator.status %></div>
-        <div class="current-floor"><%= @elevator.current_floor %></div>
-        <div class="buttons">
-          <%= for {floor, active} <- @elevator.floor_buttons do %>
-            <span phx-click="elevator_button_push"
-              phx-value-floor="<%= floor %>"
-              class="car-button <%= if active, do: "active" %>">
-                <%= floor %>
-            </span>
-          <% end %>
+      <div class="elevator <%= @elevator.status %>">
+        <div class="elevator__header">
+          <div class="elevator__name"><%= @elevator.id %></div>
+          <div class="elevator__screen">
+            <span><%= @elevator.current_floor %></span>
+            <div class="elevator__direction"></div>
+          </div>
+          <div class="elevator__doors"></div>
         </div>
-        <br><br>
+        <div class="elevator__body">
+          <div class="elevator__btns">
+            <%= for {floor, active} <- @elevator.floor_buttons do %>
+              <button type="button"
+                      class="elevator__btn<%= if active, do: " elevator__btn--active" %>"
+                      phx-click="elevator_button_push"
+                      phx-value-floor="<%= floor %>"
+              ><%= floor %></button>
+            <% end %>
+          </div>
+        </div>
       </div>
     """
   end
