@@ -4,18 +4,19 @@ defmodule SkyscraperWeb.PageLive do
   @impl true
   def render(assigns) do
     ~L"""
-    <div class="skyscrapers-container">
-
-      <%= if @skyscrapers |> Enum.empty?() do %>
-        Currently no active elevators
-      <% else %>
-        <%= for skyscraper <- @skyscrapers do %>
-          <div class="skyscraper">
-            <%= link skyscraper, to: Routes.live_path(@socket, SkyscraperWeb.ConstructLive, skyscraper) %>
-          </div>
+      <div class="container">
+        <%= if @skyscrapers |> Enum.empty?() do %>
+          <span class="text">Currently no active elevators</span>
+        <% else %>
+          <ul class="list">
+            <%= for skyscraper <- @skyscrapers do %>
+              <li class="list__item">
+                <%= link skyscraper, to: Routes.live_path(@socket, SkyscraperWeb.ConstructLive, skyscraper), class: "list__link" %>
+              </li>
+            <% end %>
+          </ul>
         <% end %>
-      <% end %>
-    </div>
+      </div>
     """
   end
 
